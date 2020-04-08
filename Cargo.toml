@@ -5,6 +5,11 @@ authors = ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
 edition = '2018'
 
 [dependencies]
-framework = { path='../framework', features = ['fehler','text'] }
+framework = { path='../framework', features = ['fehler'] }
+#framework = { path='../framework', features = ['fehler','text'] }
 fehler = '' # #[throws] expects {{root}}::fehler
 ra_ide = { path='../rust-analyzer/ra_ide' }
+rowan = { git = "https://github.com/CAD97/rowan.git", branch = "text-size" }
+
+[patch.'crates-io']
+rowan = { git = "https://github.com/CAD97/rowan.git", branch = "text-size" }
