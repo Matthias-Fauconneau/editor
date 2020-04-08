@@ -1,0 +1,10 @@
+[package]
+name = 'editor'
+version = '0.0.0'
+authors = ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
+edition = '2018'
+
+[dependencies]
+framework = { path='../framework', features = ['fehler','text'] }
+fehler = '' # #[throws] expects {{root}}::fehler
+ra_ide = { path='../rust-analyzer/ra_ide' }
