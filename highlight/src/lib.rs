@@ -38,7 +38,7 @@ pub fn highlight(text : &str) -> Vec<Span<'_>> {
         use HighlightTag::*;
         Span{text: &text[range], style: TextStyle{
             color: match highlight.tag {
-                Function|Macro => bgr{b:0.,r:1.,g:1.},
+                Function|Macro => bgr{b:1./2.,r:1.,g:1.},
                 Struct|TypeAlias|BuiltinType|TypeParam => bgr{b:1.,r:0.,g:1.},
                 Field => bgr{b:0.,r:0.,g:1.},
                 StringLiteral|NumericLiteral|Enum => bgr{b:0.,r:1.,g:1./3.},
