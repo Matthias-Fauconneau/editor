@@ -1,13 +1,17 @@
 [package]
-name = 'editor'
+name = 'highlight'
 version = '0.0.0'
 authors = ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
 edition = '2018'
 
+[lib]
+crate_type = ["dylib"]
+
 [dependencies]
-framework = { path='../framework', features = ['fehler','color_sRGB','text'] }
+framework = { path='../../framework', features = ['fehler','color_sRGB','text'] }
 fehler = '' # #[throws] expects {{root}}::fehler
-highlight = { path='highlight' }
+ra_ide = { path='../../rust-analyzer/crates/ra_ide' }
+rowan = { git = "https://github.com/CAD97/rowan.git", branch = "text-size" }
 
 [patch.'crates-io']
 rowan = { git = "https://github.com/CAD97/rowan.git", branch = "text-size" }
