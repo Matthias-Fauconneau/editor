@@ -7,7 +7,6 @@ pub struct StyledTextRange { pub range: TextRange, pub style: TextStyle }
 
 pub fn style(highlight: impl Iterator<Item=HighlightedRange>) -> impl Iterator<Item=StyledTextRange> {
     highlight.complete().map(|HighlightedRange{range, highlight, ..}| {
-        //println!("{:?} {}", highlight, &text[range]);
         use HighlightTag::*;
         StyledTextRange{range, style: TextStyle{
             color: match highlight.tag {
@@ -29,35 +28,7 @@ pub fn style(highlight: impl Iterator<Item=HighlightedRange>) -> impl Iterator<I
 
 #[throws]
 fn main() {
-    if std::env::args().nth(1).unwrap_or_default() == "rstack_self" { return rstack_self::child()?; }
-    std::thread::spawn(move || {
-        for _ in signal_hook::iterator::Signals::new(&[signal_hook::SIGINT]).unwrap().forever() {
-            for thread in rstack_self::trace(std::process::Command::new(std::env::current_exe().unwrap()).arg("rstack_self")).unwrap().threads() {
-                println!("{}", thread.name());
-                for frame in thread.frames() {
-                    for sym in frame.symbols() {
-                        if let (Some(path),Some(line)) = (sym.file(),sym.line()) { print!("{}:{}: ", path.display(), line); }
-                        println!("{}", sym.name().unwrap_or_default());
-                    }
-                }
-            }
-            std::process::abort();
-        }
-    });
-
-    let (host, packages) = load_cargo(&std::env::current_dir()?, false)?;
-    let workspace_packages = packages.iter().filter(|(_,package)| package.is_member() ).collect::<Vec<_>>();
-    let files = |(&id,_)| host.raw_database().source_root(id).walk().collect::<Vec<_>>();
-    let file_id = files(workspace_packages[0])[0];
-    let analysis = host.analysis();
-    let text = analysis.file_text(file_id)?;
-    let highlight = {
-        let start = std::time::Instant::now();
-        eprint!("analysis.highlight(file_id)?: ");
-        let value = analysis.highlight(file_id)?;
-        eprintln!("{:?}\n", start.elapsed());
-        value
-    };
+    let TextHighlight{text, highlight} = highlight()?;
     for StyledTextRange{range, style} in style(highlight.into_iter()) {
         fn print(text: &str, TextStyle{color, style}: TextStyle) {
             let code = match style {

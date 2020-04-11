@@ -3,24 +3,22 @@ name = 'rust-analyzer'
 version = '0.0.0'
 authors = ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
 edition = '2018'
-description = "rust-analyzer dylib to speed up linking"
-repository = "https://github.com/Matthias-Fauconneau/rust-analyzer"
+description = "rust-analyzer crates hub wrapper as a dylib to speed up linking"
+repository = "https://github.com/Matthias-Fauconneau/editor"
 
 [lib]
-crate_type = ["dylib"]
+crate_type = ["dylib"] # speed up linking
 
 [dependencies]
 log = ''
 anyhow = ''
+fehler = ''
 parking_lot = ''
 crossbeam-channel = ''
 globset = ''
 rustc-hash = ''
 ra_vfs = ''
-ra_db = { path='../../rust-analyzer/crates/ra_db' }
-ra_project_model = { path='../../rust-analyzer/crates/ra_project_model' }
-ra_syntax = { path='../../rust-analyzer/crates/ra_syntax' }
-ra_ide = { path='../../rust-analyzer/crates/ra_ide' }
-
-[patch.'crates-io']
-rowan = { git = "https://github.com/CAD97/rowan.git", branch = "text-size" }
+ra_db = { path = '../../rust-analyzer/crates/ra_db' }
+ra_project_model = { path = '../../rust-analyzer/crates/ra_project_model' }
+ra_syntax = { path = '../../rust-analyzer/crates/ra_syntax' }
+ra_ide = { path = '../../rust-analyzer/crates/ra_ide' }

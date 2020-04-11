@@ -6,10 +6,5 @@ edition = '2018'
 
 [dependencies]
 fehler = '' # #[throws] expects {{root}}::fehler
-signal-hook = ''
-rstack-self = { version = '', features = ["dw"], default-features = false }
 framework = { path='../framework', features = ['anyhow','fehler','color_sRGB','text'] }
 rust-analyzer = { path='rust-analyzer' }
-
-[patch.'crates-io']
-rowan = { git = "https://github.com/CAD97/rowan.git", branch = "text-size" }

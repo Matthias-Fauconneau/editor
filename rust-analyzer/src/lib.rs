@@ -1,10 +1,11 @@
-#![allow(dead_code)]
-pub use ra_db::{SourceDatabaseExt, FileId};
-use ra_syntax::TextSize;
-/*impl Zero for TextSize { fn zero() -> Self { TextSize::zero() } }*/ #[allow(non_snake_case)] fn Zero_zero() -> TextSize { TextSize::zero() }
+#![allow(dead_code)] // vfs_glob::exclude
+use {anyhow::Error, fehler::throws};
+/*pub*/ use ra_db::SourceDatabaseExt; // source_root
+use ra_syntax::TextUnit as TextSize;
+/*impl Zero for TextSize { fn zero() -> Self { TextSize::zero() } }*/ #[allow(non_snake_case)] fn Zero_zero() -> TextSize { TextSize::/*zero()*/from_usize(0) }
 pub use ra_syntax::TextRange;
 mod vfs_glob;
-mod load_cargo; pub use load_cargo::*;
+mod load_cargo; /*pub*/ use load_cargo::load_cargo;
 pub use ra_ide::{HighlightTag, HighlightedRange};
 
 /// Complete flat HighlightedRange iterator domain coverage with a default highlight
@@ -19,8 +20,8 @@ impl<I:Iterator<Item=HighlightedRange>> Iterator for Complete<I> {
         let next =
             if self.last_end < next_start {
                 Some(HighlightedRange{
-                    range:TextRange::new(self.last_end, next_start),
-                    highlight: HighlightTag::None.into() /*fixme:None*/,
+                    range:TextRange::/*new*/from_to(self.last_end, next_start),
+                    highlight: HighlightTag::None.into(),
                     binding_hash: None
                 })
             } else {
@@ -32,3 +33,23 @@ impl<I:Iterator<Item=HighlightedRange>> Iterator for Complete<I> {
 }
 pub trait IntoComplete : Iterator<Item=HighlightedRange>+Sized { fn complete(self) -> Complete<Self> { Complete::new(self) } }
 impl<T:Iterator<Item=HighlightedRange>> IntoComplete for T {}
+
+pub struct TextHighlight { pub text: std::sync::Arc<String>, pub highlight: Vec<HighlightedRange> }
+#[throws]
+pub fn highlight() -> TextHighlight {
+    let (host, packages) = load_cargo(&std::env::current_dir()?, false)?;
+    let workspace_packages = packages.iter().filter(|(_,package)| package.is_member() ).collect::<Vec<_>>();
+    let files = |(&id,_)| host.raw_database().source_root(id).walk().collect::<Vec<_>>();
+    let file_id = files(workspace_packages[0])[0];
+    let analysis = host.analysis();
+    TextHighlight{
+        text: analysis.file_text(file_id)?,
+        highlight: {
+            let start = std::time::Instant::now();
+            eprint!("analysis.highlight(file_id)?: ");
+            let value = analysis.highlight(file_id)?;
+            eprintln!("{:?}\n", start.elapsed());
+            value
+        }
+    }
+}
