@@ -5,8 +5,10 @@ authors = ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
 edition = '2018'
 
 [dependencies]
-framework = { path='../framework', features = ['anyhow','fehler','color_sRGB','text'] }
 fehler = '' # #[throws] expects {{root}}::fehler
+signal-hook = ''
+rstack-self = { version = '', features = ["dw"], default-features = false }
+framework = { path='../framework', features = ['anyhow','fehler','color_sRGB','text'] }
 rust-analyzer = { path='rust-analyzer' }
 
 [patch.'crates-io']
