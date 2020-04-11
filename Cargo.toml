@@ -5,9 +5,9 @@ authors = ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
 edition = '2018'
 
 [dependencies]
-framework = { path='../framework', features = ['fehler','color_sRGB','text'] }
+framework = { path='../framework', features = ['anyhow','fehler','color_sRGB','text'] }
 fehler = '' # #[throws] expects {{root}}::fehler
-highlight = { path='highlight' }
+rust-analyzer = { path='rust-analyzer' }
 
 [patch.'crates-io']
 rowan = { git = "https://github.com/CAD97/rowan.git", branch = "text-size" }
