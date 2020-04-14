@@ -6,5 +6,6 @@ edition = '2018'
 
 [dependencies]
 fehler = '' # #[throws] expects {{root}}::fehler
+text-size = { git='https://github.com/rust-analyzer/text-size' }
 framework = { path='../framework', features = ['anyhow','fehler','color_sRGB','text'] }
-rust-analyzer = { path='rust-analyzer' }
+rust-analyzer = { path='rust-analyzer', optional = true }
