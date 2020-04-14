@@ -10,14 +10,16 @@ repository = "https://github.com/Matthias-Fauconneau/editor"
 crate_type = ["dylib"] # speed up linking
 
 [dependencies]
-log = ''
 anyhow = ''
 fehler = ''
+log = ''
+env_logger = ''
 parking_lot = ''
 crossbeam-channel = ''
 globset = ''
 rustc-hash = ''
 ra_vfs = ''
+ra_prof = { path = '../../rust-analyzer/crates/ra_prof' }
 ra_db = { path = '../../rust-analyzer/crates/ra_db' }
 ra_project_model = { path = '../../rust-analyzer/crates/ra_project_model' }
 ra_syntax = { path = '../../rust-analyzer/crates/ra_syntax' }

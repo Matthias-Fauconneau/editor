@@ -8,20 +8,30 @@ pub struct StyledTextRange { pub range: TextRange, pub style: TextStyle }
 pub fn style(highlight: impl Iterator<Item=HighlightedRange>) -> impl Iterator<Item=StyledTextRange> {
     highlight.complete().map(|HighlightedRange{range, highlight, ..}| {
         use HighlightTag::*;
-        StyledTextRange{range, style: TextStyle{
-            color: match highlight.tag {
-                Function|Macro => bgr{b:1./2.,r:1.,g:1.},
-                Struct|TypeAlias|BuiltinType|TypeParam => bgr{b:1.,r:0.,g:1.},
-                Field => bgr{b:0.,r:0.,g:1.},
-                StringLiteral|NumericLiteral|Enum => bgr{b:0.,r:1.,g:1./3.},
-                Lifetime|Attribute => bgr{b:1.,r:1./3.,g:1./3.},
-                Comment => bgr{b:1./2.,r:1./2.,g:1./2.},
-                _ => bgr{b:1.,r:1.,g:1.},
-            },
-            style: match highlight.tag {
-                Keyword => FontStyle::Bold, // todo: Italic fn
-                _ => FontStyle::Normal
-            }}
+        StyledTextRange{
+            range,
+            style: TextStyle{
+                color: match highlight.tag {
+                    Module => bgr{b:0.,r:1.,g:1./3.},
+                    Keyword if !highlight.modifiers.iter().any(|it| it == HighlightModifier::ControlFlow) => bgr{b:2./3.,r:2./3.,g:2./3.},
+                    Function|Macro => bgr{b:2./3.,r:1.,g:2./3.},
+                    Struct|TypeAlias|BuiltinType|TypeParam|Enum => bgr{b:2./3,r:0.,g:2./3.},
+                    Field => bgr{b:0.,r:0.,g:2./3},
+                    Trait => bgr{b:1.,r:1./2.,g:1.},
+                    StringLiteral|NumericLiteral|EnumVariant => bgr{b:0.,r:1.,g:1./3.},
+                    Lifetime|Attribute => bgr{b:1.,r:1./3.,g:1./3.},
+                    Comment => bgr{b:1./2.,r:1./2.,g:1./2.},
+                    _ => bgr{b:1.,r:1.,g:1.},
+                },
+                style:
+                    if highlight.modifiers.iter().any(|it| it == HighlightModifier::ControlFlow) { FontStyle::Bold } //else { FontStyle::Normal }
+                    else {
+                        match highlight.tag {
+                            Keyword => FontStyle::Bold, // fixme: Italic
+                            _ => FontStyle::Normal
+                        }
+                    }
+            }
         }
     })
 }

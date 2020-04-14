@@ -6,7 +6,7 @@ use ra_syntax::TextUnit as TextSize;
 pub use ra_syntax::TextRange;
 mod vfs_glob;
 mod load_cargo; /*pub*/ use load_cargo::load_cargo;
-pub use ra_ide::{HighlightTag, HighlightedRange};
+pub use ra_ide::{HighlightedRange, HighlightTag, HighlightModifier};
 
 /// Complete flat HighlightedRange iterator domain coverage with a default highlight
 pub struct Complete<I:Iterator> { iter: std::iter::Peekable<I>, last_end: TextSize}
@@ -14,9 +14,7 @@ impl<I:Iterator> Complete<I> { fn new(iter: I) -> Self { Self{iter: iter.peekabl
 impl<I:Iterator<Item=HighlightedRange>> Iterator for Complete<I> {
     type Item = HighlightedRange;
     fn next(&mut self) -> Option<HighlightedRange> {
-        let next_start = self.iter.peek()?.range.start(); // todo: yield any last default span
-#[macro_export] macro_rules! prefer { ($cond:expr, $($val:expr),* ) => { if !$cond { println!("{}. {:?}", stringify!($cond), ( $( format!("{} = {:?}", stringify!($val), $val), )* ) ); } } }
-        prefer!(self.last_end <= next_start, self.last_end, next_start);
+        let next_start = self.iter.peek()?.range.start(); // todo: yield any last None highlight
         let next =
             if self.last_end < next_start {
                 Some(HighlightedRange{
@@ -37,19 +35,13 @@ impl<T:Iterator<Item=HighlightedRange>> IntoComplete for T {}
 pub struct TextHighlight { pub text: std::sync::Arc<String>, pub highlight: Vec<HighlightedRange> }
 #[throws]
 pub fn highlight() -> TextHighlight {
+    //env_logger::try_init()?;
+    env_logger::Builder::new().filter(None, log::LevelFilter::Trace).format_level(false).format_timestamp(None).init();
+    ra_prof::init();
     let (host, packages) = load_cargo(&std::env::current_dir()?, false)?;
     let workspace_packages = packages.iter().filter(|(_,package)| package.is_member() ).collect::<Vec<_>>();
     let files = |(&id,_)| host.raw_database().source_root(id).walk().collect::<Vec<_>>();
     let file_id = files(workspace_packages[0])[0];
     let analysis = host.analysis();
-    TextHighlight{
-        text: analysis.file_text(file_id)?,
-        highlight: {
-            let start = std::time::Instant::now();
-            eprint!("analysis.highlight(file_id)?: ");
-            let value = analysis.highlight(file_id)?;
-            eprintln!("{:?}\n", start.elapsed());
-            value
-        }
-    }
+    TextHighlight{text: analysis.file_text(file_id)?, highlight: analysis.highlight(file_id)?}
 }
