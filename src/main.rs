@@ -1,12 +1,6 @@
-use framework::{color::bgr, *};
+use framework::{Error,throws, text::{TextSize,TextRange,Color,FontStyle,Style,Attribute,Text}, window};
 
-pub type Color = bgr;
-pub enum FontStyle { Normal, Bold, /*Italic, BoldItalic*/ }
-pub struct TextStyle { pub color: Color, pub style: FontStyle }
-use text_size::{TextSize, TextRange}; // ~Range<u32> with impl SliceIndex for String
-pub struct StyledTextRange { pub range: TextRange, pub style: TextStyle }
-pub struct StyledText { pub text: std::sync::Arc<String>, pub style: Vec<StyledTextRange> }
-
+pub struct StyledText { pub text: std::sync::Arc<String>, pub style: Vec<Attribute<Style>> }
 #[cfg(feature="rust-analyzer")] mod highlight {
     use {super::*, rust_analyzer::*};
     #[throws]
@@ -42,20 +36,21 @@ pub struct StyledText { pub text: std::sync::Arc<String>, pub style: Vec<StyledT
     }
     pub fn highlight() -> StyledText { let TextHighlight{text, highlight} = highlight()?; StyledText{text, style: style(highlight().into_iter()).collect()} }
 }
-#[cfg(not(feature="rust-analyzer"))] mod highlight { // Develop text editor without styling while initial analysis is too slow, blocked on parallel items: rust-analyzer#3485,3720
+#[cfg(not(feature="rust-analyzer"))] mod highlight { // Stub highlight to develop text editor while rust-analyzer is too slow, blocked on parallel items: rust-analyzer#3485,3720
     use super::*;
     #[throws]
     pub fn highlight() -> StyledText {
         let text = std::sync::Arc::new(std::str::from_utf8(&std::fs::read("src/main.rs")?)?.to_string());
-        let style = vec![StyledTextRange{range: TextRange::new(TextSize::zero(), TextSize::of(&text)), style: TextStyle{ color: bgr{b:1.,r:1.,g:1.}, style: FontStyle::Normal }}];
+        let style = vec![Attribute::<Style>{range: TextRange::new(TextSize::zero(), TextSize::of(&text)), attribute: Style{ color: Color{b:1.,r:1.,g:1.}, style: FontStyle::Normal }}];
         StyledText{text, style}
     }
 }
 
 #[throws]
 fn main() {
-    let text = highlight::highlight()?;
-    for StyledTextRange{range, style} in text.style {
+    let highlight = highlight::highlight()?;
+    #[cfg(feature="terminal")]
+    for StyledTextRange{range, style} in highlight.style {
         fn print(text: &str, TextStyle{color, style}: TextStyle) {
             let code = match style {
                 FontStyle::Normal => 31,
@@ -65,7 +60,8 @@ fn main() {
             let bgra8{b,g,r,..} = color.into();
             print!("\x1b[{}m\x1b[38;2;{};{};{}m{}\x1b(B\x1b[m",code, r,g,b, text)
         }
-        print(&text.text[range], style);
+        print(&highlight.text[range], style);
     }
-    //window(&mut Text::new(text))?
+    #[cfg(not(feature="terminal"))]
+    window(&mut Text::new(&highlight.text, &highlight.style))?
 }
