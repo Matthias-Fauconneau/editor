@@ -40,14 +40,25 @@ pub struct StyledText { pub text: std::sync::Arc<String>, pub style: Vec<Attribu
     use super::*;
     #[throws]
     pub fn highlight() -> StyledText {
-        let text = std::str::from_utf8(&std::fs::read("src/main.rs")?)?.chars().scan(0, |depth, char| {
-            if char == '{' { *depth += 1; }
-            let next = Some((*depth, char));
-            if char == '}' { *depth -= 1; }
-            next
-        }).filter(|&(depth,_)| depth==0).map(|(_,char)| char).collect();
+        let file = std::fs::read("src/main.rs")?;
+        let source = std::str::from_utf8(&file)?;
+        let mut depth = 0;
+        let mut last_root_bracket = None;
+        let mut target = String::with_capacity(source.len());
+        for (offset, char) in source.char_indices() {
+            if char == '{' {
+                if depth == 0 { last_root_bracket = Some(offset); }
+                depth += 1;
+            }
+            if depth == 0 { target.push(char) }
+            if char == '\n' { last_root_bracket = None; }
+            if char == '}' {
+                depth -= 1;
+                if let Some(backtrack) = last_root_bracket { target.push_str(&source[backtrack..=offset]) }
+            }
+        }
+        let text = std::sync::Arc::new(target);
         print!("{}", text);
-        let text = std::sync::Arc::new(text);
         let style = vec![Attribute::<Style>{range: TextRange::new(TextSize::zero(), TextSize::of(&text)), attribute: Style{ color: Color{b:1.,r:1.,g:1.}, style: FontStyle::Normal }}];
         StyledText{text, style}
     }
