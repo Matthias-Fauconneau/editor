@@ -40,7 +40,14 @@ pub struct StyledText { pub text: std::sync::Arc<String>, pub style: Vec<Attribu
     use super::*;
     #[throws]
     pub fn highlight() -> StyledText {
-        let text = std::sync::Arc::new(std::str::from_utf8(&std::fs::read("src/main.rs")?)?.to_string());
+        let text = std::str::from_utf8(&std::fs::read("src/main.rs")?)?.chars().scan(0, |depth, char| {
+            if char == '{' { *depth += 1; }
+            let next = Some((*depth, char));
+            if char == '}' { *depth -= 1; }
+            next
+        }).filter(|&(depth,_)| depth==0).map(|(_,char)| char).collect();
+        print!("{}", text);
+        let text = std::sync::Arc::new(text);
         let style = vec![Attribute::<Style>{range: TextRange::new(TextSize::zero(), TextSize::of(&text)), attribute: Style{ color: Color{b:1.,r:1.,g:1.}, style: FontStyle::Normal }}];
         StyledText{text, style}
     }
