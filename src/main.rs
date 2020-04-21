@@ -1,6 +1,6 @@
-use framework::{Error,throws, text::{TextSize,TextRange,Color,FontStyle,Style,Attribute,Text}, window};
+use {std::sync::Arc, framework::{Error,throws, text::{Style,Attribute, TextSize,TextRange,Color,FontStyle}}};
 
-pub struct StyledText { pub text: std::sync::Arc<String>, pub style: Vec<Attribute<Style>> }
+pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> }
 #[cfg(feature="rust-analyzer")] mod highlight {
     use {super::*, rust_analyzer::*};
     #[throws]
@@ -57,29 +57,73 @@ pub struct StyledText { pub text: std::sync::Arc<String>, pub style: Vec<Attribu
                 if let Some(backtrack) = last_root_bracket { target.push_str(&source[backtrack..=offset]) }
             }
         }
-        let text = std::sync::Arc::new(target);
-        print!("{}", text);
+        let text = Arc::new(target);
         let style = vec![Attribute::<Style>{range: TextRange::new(TextSize::zero(), TextSize::of(&text)), attribute: Style{ color: Color{b:1.,r:1.,g:1.}, style: FontStyle::Normal }}];
         StyledText{text, style}
     }
 }
 
+#[cfg(feature="iced")]
+mod iced {
+    pub use iced::{Settings, Sandbox};
+    use iced::{Element, text_input, TextInput};
+
+    #[derive(Default)]
+    pub struct Editor {
+        text: String,
+        text_input_state: text_input::State,
+    }
+
+    #[derive(Debug, Clone)]
+    pub enum Message {
+        InputChanged(String),
+    }
+
+    impl Sandbox for Editor {
+        type Message = Message;
+        fn new() -> Self {
+            let highlight = super::highlight::highlight().unwrap();
+            Self{
+                text: highlight.text.to_string(),
+                ..Editor::default()
+            }
+        }
+        fn title(&self) -> String { String::from("Editor") }
+        fn update(&mut self, message: Message) {
+            match message {
+                Message::InputChanged(value) => self.text = value,
+            }
+        }
+        fn view(&mut self) -> Element<Message> {
+            TextInput::new(&mut self.text_input_state, "", &self.text, Message::InputChanged).into()
+        }
+    }
+}
+
 #[throws]
 fn main() {
-    let highlight = highlight::highlight()?;
-    #[cfg(feature="terminal")]
-    for StyledTextRange{range, style} in highlight.style {
-        fn print(text: &str, TextStyle{color, style}: TextStyle) {
-            let code = match style {
-                FontStyle::Normal => 31,
-                FontStyle::Bold => 1,
-                //_ => 31
-            };
-            let bgra8{b,g,r,..} = color.into();
-            print!("\x1b[{}m\x1b[38;2;{};{};{}m{}\x1b(B\x1b[m",code, r,g,b, text)
+    #[cfg(feature="text")] {
+        let highlight = highlight::highlight()?;
+        for StyledTextRange{range, style} in highlight.style {
+            fn print(text: &str, TextStyle{color, style}: TextStyle) {
+                let code = match style {
+                    FontStyle::Normal => 31,
+                    FontStyle::Bold => 1,
+                    //_ => 31
+                };
+                let bgra8{b,g,r,..} = color.into();
+                print!("\x1b[{}m\x1b[38;2;{};{};{}m{}\x1b(B\x1b[m",code, r,g,b, text)
+            }
+            print(&highlight.text[range], style);
         }
-        print(&highlight.text[range], style);
     }
-    #[cfg(not(feature="terminal"))]
-    window(&mut Text::new(&highlight.text, &highlight.style))?
+    #[cfg(feature="framework/window")] {
+        let highlight = highlight::highlight()?;
+        use framework::{TextEdit, window};
+        framework::window(&mut TextEdit::new(&highlight.text, &highlight.style))?;
+    }
+    #[cfg(feature="iced")] {
+        use crate::iced::{Settings, Sandbox, Editor};
+        Editor::run(Settings::default())
+    }
 }
