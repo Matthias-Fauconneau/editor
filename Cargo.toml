@@ -7,12 +7,18 @@ edition = '2018'
 [dependencies]
 fehler = '' # #[throws] expects {{root}}::fehler
 framework = { path='../framework', features = ['anyhow','fehler','trace-sigint','text'] }
+env_logger = ''
+iced = { path = '../iced', default-features=false,  optional=true }
 rust-analyzer = { path='rust-analyzer', optional = true }
-iced = { path = '../iced', default-features=false, features = ["iced_sctk","iced_shm"], optional=true }
 
 [features]
-text = []
-# framework/window
-# iced
+terminal = []
+window = ['framework/text','framework/window']
+sctk = ['iced/sctk', 'iced/shm']
+winit = ['iced/winit', 'iced/wgpu']
 highlight = ['rust-analyzer','framework/color-sRGB']
-default = ['iced']
+#default = ['winit']
+
+[patch.crates-io]
+winit = { path = '../winit' } # smithay-wayland-client:0.9
+wayland-client = { path = "../wayland-rs/wayland-client" } # EventQueue::dispatch_pending(&self, ..)

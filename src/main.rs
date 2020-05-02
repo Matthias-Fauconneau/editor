@@ -58,7 +58,7 @@ pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> 
             }
         }
         let text = Arc::new(target);
-        let style = vec![Attribute::<Style>{range: TextRange::new(TextSize::zero(), TextSize::of(&text)), attribute: Style{ color: Color{b:1.,r:1.,g:1.}, style: FontStyle::Normal }}];
+        let style = vec![Attribute::<Style>{range: TextRange::up_to(TextSize::of(text.as_str())), attribute: Style{ color: Color{b:1.,r:1.,g:1.}, style: FontStyle::Normal }}];
         StyledText{text, style}
     }
 }
@@ -102,7 +102,11 @@ mod iced {
 
 #[throws]
 fn main() {
-    #[cfg(feature="text")] {
+    env_logger::init();
+    #[cfg(feature="framework/rstack-self")] rstack_self();
+    #[cfg(feature="framework/signal-hook")] signal_hook();
+
+    #[cfg(feature="terminal")] {
         let highlight = highlight::highlight()?;
         for StyledTextRange{range, style} in highlight.style {
             fn print(text: &str, TextStyle{color, style}: TextStyle) {
@@ -117,10 +121,10 @@ fn main() {
             print(&highlight.text[range], style);
         }
     }
-    #[cfg(feature="framework/window")] {
+    #[cfg(feature="window")] {
         let highlight = highlight::highlight()?;
-        use framework::{TextEdit, window};
-        framework::window(&mut TextEdit::new(&highlight.text, &highlight.style))?;
+        use framework::{text::TextEdit, window::run};
+        run(&mut TextEdit::new(&highlight.text, &highlight.style))?;
     }
     #[cfg(feature="iced")] {
         use crate::iced::{Settings, Sandbox, Editor};
