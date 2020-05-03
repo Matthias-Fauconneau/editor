@@ -66,7 +66,7 @@ pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> 
 
 #[cfg(feature="iced")]
 mod iced {
-    pub use iced::{Settings, Sandbox};
+    pub use iced::{Settings, Sandbox, window};
     use iced::{Element, text_input, TextInput};
 
     #[derive(Default)]
@@ -129,8 +129,8 @@ fn main() {
         run(&mut TextEdit::new(&highlight.text, &highlight.style))?;
     }
     #[cfg(feature="iced")] {
-        use crate::iced::{Settings, Sandbox, Editor};
-        Editor::run(Settings::default())
+        use self::iced::{Settings, Sandbox, Editor, window};
+        Editor::run(Settings{window:window::Settings{overlay:true, ..Default::default()}, ..Default::default()})
     }
     log::trace!("editor: Ok");
 }
