@@ -5,20 +5,26 @@ authors = ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
 edition = '2018'
 
 [dependencies]
+log = ''
 fehler = '' # #[throws] expects {{root}}::fehler
 framework = { path='../framework', features = ['anyhow','fehler','trace-sigint','text'] }
-env_logger = ''
-iced = { path = '../iced', default-features=false,  optional=true }
-rust-analyzer = { path='rust-analyzer', optional = true }
+env_logger = { version = '', default-features=false, optional=true }
+iced = { path = '../iced', default-features=false, optional=true } # iced/shm
+#iced = { version='', optional=true }
+#rust-analyzer = { path='rust-analyzer', optional = true }
 
 [features]
+rstack-self = ['framework/rstack-self']
+signal-hook = ['framework/signal-hook']
 terminal = []
 window = ['framework/text','framework/window']
-sctk = ['iced/sctk', 'iced/shm']
-winit = ['iced/winit', 'iced/wgpu']
-highlight = ['rust-analyzer','framework/color-sRGB']
+#wgpu = ['iced/winit']#, 'iced/wgpu']
+winit = ['iced/winit']#, 'iced/shm']
+shm = ['iced/shm']#, 'iced/winit']
+#sctk = ['iced/sctk']#, 'iced/shm']
+#highlight = ['rust-analyzer','framework/color-sRGB']
 #default = ['winit']
 
 [patch.crates-io]
 winit = { path = '../winit' } # smithay-wayland-client:0.9
-wayland-client = { path = "../wayland-rs/wayland-client" } # EventQueue::dispatch_pending(&self, ..)
+#wayland-client = { path = "../wayland-rs/wayland-client" } # EventQueue::dispatch_pending(&self, ..)

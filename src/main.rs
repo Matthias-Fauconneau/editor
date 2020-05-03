@@ -38,6 +38,7 @@ pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> 
 }
 #[cfg(not(feature="rust-analyzer"))] mod highlight { // Stub highlight to develop text editor while rust-analyzer is too slow, blocked on parallel items: rust-analyzer#3485,3720
     use super::*;
+    #[allow(dead_code)] // ?
     #[throws]
     pub fn highlight() -> StyledText {
         let file = std::fs::read("src/main.rs")?;
@@ -83,6 +84,7 @@ mod iced {
         type Message = Message;
         fn new() -> Self {
             let highlight = super::highlight::highlight().unwrap();
+            log::trace!("Editor: new");
             Self{
                 text: highlight.text.to_string(),
                 ..Editor::default()
@@ -102,9 +104,9 @@ mod iced {
 
 #[throws]
 fn main() {
-    env_logger::init();
-    #[cfg(feature="framework/rstack-self")] rstack_self();
-    #[cfg(feature="framework/signal-hook")] signal_hook();
+    #[cfg(feature="env_logger")] env_logger::init();
+    #[cfg(feature="rstack-self")] framework::rstack_self()?;
+    #[cfg(feature="signal-hook")] framework::signal_hook();
 
     #[cfg(feature="terminal")] {
         let highlight = highlight::highlight()?;
@@ -130,4 +132,5 @@ fn main() {
         use crate::iced::{Settings, Sandbox, Editor};
         Editor::run(Settings::default())
     }
+    log::trace!("editor: Ok");
 }
