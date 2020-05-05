@@ -84,7 +84,6 @@ mod iced {
         type Message = Message;
         fn new() -> Self {
             let highlight = super::highlight::highlight().unwrap();
-            log::trace!("Editor: new");
             Self{
                 text: highlight.text.to_string(),
                 ..Editor::default()
