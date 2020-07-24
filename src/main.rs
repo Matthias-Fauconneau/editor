@@ -36,26 +36,25 @@ pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> 
     }
     pub fn highlight() -> StyledText { let TextHighlight{text, highlight} = highlight()?; StyledText{text, style: style(highlight().into_iter()).collect()} }
 }
-#[cfg(not(feature="rust-analyzer"))] mod highlight { // Stub highlight to develop text editor while rust-analyzer is too slow, blocked on parallel items: rust-analyzer#3485,3720
+#[cfg(not(feature="rust-analyzer"))] mod highlight { // Stub highlight to develop text editor #3720
     use super::*;
-    #[allow(dead_code)] // ?
     #[throws]
     pub fn highlight() -> StyledText {
         let file = std::fs::read("src/main.rs")?;
         let source = std::str::from_utf8(&file)?;
         let mut depth = 0;
-        let mut last_root_bracket = None;
+        let mut line_last_root_bracket = None;
         let mut target = String::with_capacity(source.len());
-        for (offset, char) in source.char_indices() {
+        for (offset, char) in source.char_indices() { // Root item summary
             if char == '{' {
-                if depth == 0 { last_root_bracket = Some(offset); }
+                if depth == 0 { line_last_root_bracket = Some(offset); }
                 depth += 1;
             }
             if depth == 0 { target.push(char) }
-            if char == '\n' { last_root_bracket = None; }
+            if char == '\n' { line_last_root_bracket = None; }
             if char == '}' {
                 depth -= 1;
-                if let Some(backtrack) = last_root_bracket { target.push_str(&source[backtrack..=offset]) }
+                if depth == 0 { if let Some(backtrack) = line_last_root_bracket { target.push_str(&source[backtrack..=offset]) } }
             }
         }
         let text = Arc::new(target);
@@ -73,7 +72,6 @@ use framework::*;
 				let code = match style {
 					FontStyle::Normal => 31,
 					FontStyle::Bold => 1,
-					//_ => 31
 				};
 				let bgra8{b,g,r,..} = color.into();
 				print!("\x1b[{}m\x1b[38;2;{};{};{}m{}\x1b(B\x1b[m",code, r,g,b, text)
