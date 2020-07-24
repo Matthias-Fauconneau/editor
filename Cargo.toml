@@ -9,7 +9,10 @@ log = ''
 fehler = '' # #[throws] expects {{root}}::fehler
 framework = { path='../framework', features = ['anyhow','fehler','trace-sigint','text'] }
 env_logger = { version = '', default-features=false, optional=true }
-iced = { path = '../iced', default-features=false, optional=true } # iced/shm
+iced = { path = '../iced', default-features=false, optional=true }
+# Run existing application instance. e.g Allows user to call view -> Element to get widget size to set window size and run the same instance
+iced_sctk = { path = '../iced/sctk', default-features=false, optional=true }
+
 #rust-analyzer = { path='rust-analyzer', optional = true }
 
 [features]
@@ -20,5 +23,5 @@ terminal = []
 window = ['framework/text','framework/window']
 wgpu = ['iced/wgpu']#, 'iced/sctk']
 shm = ['iced/shm']#, 'iced/sctk']
-sctk = ['iced/sctk']#, 'iced/shm']
+sctk = ['iced/sctk', 'iced_sctk']#, 'iced/shm']
 default = ['env_logger','sctk','shm']

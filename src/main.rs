@@ -65,8 +65,7 @@ pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> 
 }
 
 #[cfg(feature="iced")]
-mod iced {
-    pub use iced::{Settings, Sandbox, window};
+mod iced_editor {
     use iced::{Element, text_input, TextInput};
 
     #[derive(Default)]
@@ -80,7 +79,7 @@ mod iced {
         InputChanged(String),
     }
 
-    impl Sandbox for Editor {
+    impl iced::Sandbox for Editor {
         type Message = Message;
         fn new() -> Self {
             let highlight = super::highlight::highlight().unwrap();
@@ -101,7 +100,7 @@ mod iced {
     }
 }
 
-#[throws]
+//#[throws]
 fn main() {
     #[cfg(feature="env_logger")] env_logger::init();
     #[cfg(feature="rstack-self")] framework::rstack_self()?;
@@ -128,8 +127,19 @@ fn main() {
         run(&mut TextEdit::new(&highlight.text, &highlight.style))?;
     }
     #[cfg(feature="iced")] {
-        use self::iced::{Settings, Sandbox, Editor, window};
-        Editor::run(Settings{window:window::Settings{overlay:true, ..Default::default()}, ..Default::default()})
+        use {iced::{runtime, window::Settings}, iced_editor::Editor};
+        pub trait Application : iced::Application { // -> fix iced::new
+            fn new(flags: Self::Flags) -> (iced::Instance<Self>, iced::Command<Self::Message>) {
+                let new = <Self as iced::Application>::new(flags); (iced::Instance(new.0), new.1)
+            }
+        }
+        impl<A:iced::Application> Application for A {} // shim
+        pub trait Application_ : Sized { fn run(self, settings: iced::window::Settings); } // -> iced
+        impl<A:runtime::Application+'static> Application_ for (A,iced::Command<A::Message>) { // shim
+            fn run(self, settings: iced::window::Settings) { iced_sctk::run(self, settings.into(), Default::default()); }
+        }
+        let app = Editor::new(());
+        app.run(Settings{overlay:true, ..Default::default()});
     }
     log::trace!("editor: Ok");
 }
