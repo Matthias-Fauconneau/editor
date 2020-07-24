@@ -5,23 +5,9 @@ authors = ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
 edition = '2018'
 
 [dependencies]
-log = ''
 fehler = '' # #[throws] expects {{root}}::fehler
-framework = { path='../framework', features = ['anyhow','fehler','trace-sigint','text'] }
-env_logger = { version = '', default-features=false, optional=true }
-iced = { path = '../iced', default-features=false, optional=true }
-# Run existing application instance. e.g Allows user to call view -> Element to get widget size to set window size and run the same instance
-iced_sctk = { path = '../iced/sctk', default-features=false, optional=true }
-
-#rust-analyzer = { path='rust-analyzer', optional = true }
+framework = { path='../framework', features = ['fehler','anyhow','text','window'] }
+rust-analyzer = { path='rust-analyzer', optional = true }
 
 [features]
-rstack-self = ['framework/rstack-self']
-signal-hook = ['framework/signal-hook']
-#highlight = ['rust-analyzer','framework/color-sRGB']
-terminal = []
-window = ['framework/text','framework/window']
-wgpu = ['iced/wgpu']#, 'iced/sctk']
-shm = ['iced/shm']#, 'iced/sctk']
-sctk = ['iced/sctk', 'iced_sctk']#, 'iced/shm']
-default = ['env_logger','sctk','shm']
+highlight = ['rust-analyzer','framework/color']

@@ -64,82 +64,22 @@ pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> 
     }
 }
 
-#[cfg(feature="iced")]
-mod iced_editor {
-    use iced::{Element, text_input, TextInput};
-
-    #[derive(Default)]
-    pub struct Editor {
-        text: String,
-        text_input_state: text_input::State,
-    }
-
-    #[derive(Debug, Clone)]
-    pub enum Message {
-        InputChanged(String),
-    }
-
-    impl iced::Sandbox for Editor {
-        type Message = Message;
-        fn new() -> Self {
-            let highlight = super::highlight::highlight().unwrap();
-            Self{
-                text: highlight.text.to_string(),
-                ..Editor::default()
-            }
-        }
-        fn title(&self) -> String { String::from("Editor") }
-        fn update(&mut self, message: Message) {
-            match message {
-                Message::InputChanged(value) => self.text = value,
-            }
-        }
-        fn view(&mut self) -> Element<Message> {
-            TextInput::new(&mut self.text_input_state, "", &self.text, Message::InputChanged).into()
-        }
-    }
-}
-
-//#[throws]
-fn main() {
-    #[cfg(feature="env_logger")] env_logger::init();
-    #[cfg(feature="rstack-self")] framework::rstack_self()?;
-    #[cfg(feature="signal-hook")] framework::signal_hook();
-
-    #[cfg(feature="terminal")] {
-        let highlight = highlight::highlight()?;
-        for StyledTextRange{range, style} in highlight.style {
-            fn print(text: &str, TextStyle{color, style}: TextStyle) {
-                let code = match style {
-                    FontStyle::Normal => 31,
-                    FontStyle::Bold => 1,
-                    //_ => 31
-                };
-                let bgra8{b,g,r,..} = color.into();
-                print!("\x1b[{}m\x1b[38;2;{};{};{}m{}\x1b(B\x1b[m",code, r,g,b, text)
-            }
-            print(&highlight.text[range], style);
-        }
-    }
-    #[cfg(feature="window")] {
-        let highlight = highlight::highlight()?;
-        use framework::{text::TextEdit, window::run};
-        run(&mut TextEdit::new(&highlight.text, &highlight.style))?;
-    }
-    #[cfg(feature="iced")] {
-        use {iced::{runtime, window::Settings}, iced_editor::Editor};
-        pub trait Application : iced::Application { // -> fix iced::new
-            fn new(flags: Self::Flags) -> (iced::Instance<Self>, iced::Command<Self::Message>) {
-                let new = <Self as iced::Application>::new(flags); (iced::Instance(new.0), new.1)
-            }
-        }
-        impl<A:iced::Application> Application for A {} // shim
-        pub trait Application_ : Sized { fn run(self, settings: iced::window::Settings); } // -> iced
-        impl<A:runtime::Application+'static> Application_ for (A,iced::Command<A::Message>) { // shim
-            fn run(self, settings: iced::window::Settings) { iced_sctk::run(self, settings.into(), Default::default()); }
-        }
-        let app = Editor::new(());
-        app.run(Settings{overlay:true, ..Default::default()});
-    }
-    log::trace!("editor: Ok");
+use framework::*;
+#[throws] fn main() {
+    let highlight = highlight::highlight()?;
+    if false {
+		for &Attribute{range, attribute} in highlight.style.iter() {
+			fn print(text: &str, Style{color, style}: Style) {
+				let code = match style {
+					FontStyle::Normal => 31,
+					FontStyle::Bold => 1,
+					//_ => 31
+				};
+				let bgra8{b,g,r,..} = color.into();
+				print!("\x1b[{}m\x1b[38;2;{};{};{}m{}\x1b(B\x1b[m",code, r,g,b, text)
+			}
+			print(&highlight.text[range], attribute);
+		}
+	}
+    window::run(&mut text::TextEdit::new(&highlight.text, &highlight.style))?;
 }
