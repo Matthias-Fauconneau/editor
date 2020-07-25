@@ -6,8 +6,9 @@ edition = '2018'
 
 [dependencies]
 fehler = '' # #[throws] expects {{root}}::fehler
-framework = { path='../framework', features = ['fehler','anyhow','text-edit','window','timeout','trace'] }
+core = { path='../core', features = ['fehler'] }
+ui = { path='../ui', features = ['text-edit','window','timeout','trace'] }
 rust-analyzer = { path='rust-analyzer', optional = true }
 
 [features]
-highlight = ['rust-analyzer','framework/color']
+highlight = ['rust-analyzer','ui/color']
