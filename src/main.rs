@@ -1,4 +1,4 @@
-use {std::sync::Arc, framework::{Error,throws, text::{Style,Attribute, TextSize,TextRange,Color,FontStyle}}};
+use {std::sync::Arc, framework::{Error,throws, text::{Style,Attribute,FontStyle}}};
 
 pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> }
 #[cfg(feature="rust-analyzer")] mod highlight {
@@ -58,13 +58,13 @@ pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> 
             }
         }
         let text = Arc::new(target);
-        let style = vec![Attribute::<Style>{range: TextRange::up_to(TextSize::of(text.as_str())), attribute: Style{ color: Color{b:1.,r:1.,g:1.}, style: FontStyle::Normal }}];
-        StyledText{text, style}
+        StyledText{text, style: default_style.to_vec()}
     }
 }
 
 use framework::*;
 #[throws] fn main() {
+	rstack_self()?;
     let highlight = highlight::highlight()?;
     if false {
 		for &Attribute{range, attribute} in highlight.style.iter() {
@@ -79,5 +79,5 @@ use framework::*;
 			print(&highlight.text[range], attribute);
 		}
 	}
-    window::run(&mut text::TextEdit::new(&highlight.text, &highlight.style))?;
+    window::run(&mut TextEdit::new(Text::new(&default_font, &highlight.text, &highlight.style)))?
 }
