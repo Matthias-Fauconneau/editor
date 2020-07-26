@@ -40,25 +40,31 @@ pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> 
     use super::*;
     #[throws]
     pub fn highlight() -> StyledText {
-        let file = std::fs::read("src/main.rs")?;
-        let source = std::str::from_utf8(&file)?;
-        let mut depth = 0;
-        let mut line_last_root_bracket = None;
-        let mut target = String::with_capacity(source.len());
-        for (offset, char) in source.char_indices() { // Root item summary
-            if char == '{' {
-                if depth == 0 { line_last_root_bracket = Some(offset); }
-                depth += 1;
-            }
-            if depth == 0 { target.push(char) }
-            if char == '\n' { line_last_root_bracket = None; }
-            if char == '}' {
-                depth -= 1;
-                if depth == 0 { if let Some(backtrack) = line_last_root_bracket { target.push_str(&source[backtrack..=offset]) } }
-            }
-        }
-        let text = Arc::new(target);
-        StyledText{text, style: ui::default_style.to_vec()}
+        fn items(text: &str) -> impl Iterator<Item=&str> {
+			let mut it = text.char_indices().scan(0, |depth, (i, c)| {
+				if c == '{' { *depth += 1; }
+				let c_depth = *depth;
+				if c == '}' { *depth -= 1; }
+				Some((i, c_depth, c))
+			}).peekable();
+			std::iter::from_fn(move || loop {
+				for _ in it.peeking_take_while(|&(_, _, c)| c == '\n') {}
+				if it.peek().is_none() { return None; }
+				let mut it = it.peeking_take_while(|&(_, _, c)| c != '\n').peekable();
+				for _ in it.peeking_take_while(|&(_, depth, c)| depth > 0 || c==' ') {}
+				if let Some((start,_,_)) = it.next() {
+					let mut end = start+1;
+					loop {
+						for (i,_,_) in it.peeking_take_while(|&(_, depth, _)| depth == 0) { end = i; }
+						if it.peek().is_none() { break; }
+						for _ in it.peeking_take_while(|&(_, depth, c)| depth > 0 || c==' ') {}
+					}
+					return Some(text[start..end].trim_end())
+				}
+			})
+		}
+		use itertools::Itertools;
+        StyledText{text: Arc::new(items(std::str::from_utf8(&std::fs::read("src/main.rs")?)?).join("\n")), style: ui::default_style.to_vec()}
     }
 }
 
@@ -66,7 +72,7 @@ pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> 
 	core::rstack_self()?;
     let highlight = highlight::highlight()?;
     if false {
-		for &Attribute{range, attribute} in highlight.style.iter() {
+		for &Attribute{range: _range, attribute} in highlight.style.iter() {
 			fn print(text: &str, Style{color, style}: Style) {
 				let code = match style {
 					FontStyle::Normal => 31,
@@ -75,8 +81,10 @@ pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> 
 				let ui::bgra8{b,g,r,..} = color.into();
 				print!("\x1b[{}m\x1b[38;2;{};{};{}m{}\x1b(B\x1b[m",code, r,g,b, text)
 			}
-			print(&highlight.text[range], attribute);
+			//print(&highlight.text[range], attribute);
+			print(&highlight.text, attribute);
 		}
+		println!();
 	}
     ui::window::run(&mut ui::TextEdit::new(ui::Text::new(&ui::default_font, &highlight.text, &highlight.style)))?
 }

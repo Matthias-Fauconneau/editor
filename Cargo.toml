@@ -7,8 +7,12 @@ edition = '2018'
 [dependencies]
 fehler = '' # #[throws] expects {{root}}::fehler
 core = { path='../core', features = ['fehler'] }
+itertools = ''
 ui = { path='../ui', features = ['text-edit','window','timeout','trace'] }
 rust-analyzer = { path='rust-analyzer', optional = true }
 
 [features]
 highlight = ['rust-analyzer','ui/color']
+
+[profile.dev.package.image]
+opt-level = 2
