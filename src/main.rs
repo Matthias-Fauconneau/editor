@@ -64,7 +64,7 @@ pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> 
 			})
 		}
 		use itertools::Itertools;
-        StyledText{text: Arc::new(items(std::str::from_utf8(&std::fs::read("src/main.rs")?)?).join("\n")), style: ui::default_style.to_vec()}
+        StyledText{text: Arc::new(items(std::str::from_utf8(&std::fs::read("src/main.rs")?)?).join("\n")), style: ui::text::default_style.to_vec()}
     }
 }
 
@@ -86,5 +86,5 @@ pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> 
 		}
 		println!();
 	}
-    ui::window::run(&mut ui::TextEdit::new(ui::Text::new(&ui::default_font, &highlight.text, &highlight.style)))?
+    ui::app::run(ui::edit::Edit::new(&ui::text::default_font, ui::edit::Cow::Borrowed(ui::edit::Buffer{text: &highlight.text, style: &highlight.style})))?
 }
