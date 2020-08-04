@@ -72,7 +72,7 @@ pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> 
 	//core::rstack_self()?;
 	let highlight = highlight::highlight()?;
 	if false {
-		for &Attribute{range: _range, attribute} in highlight.style.iter() {
+		for &Attribute{attribute,..} in highlight.style.iter() {
 			fn print(text: &str, Style{color, style}: Style) {
 				let code = match style {
 					FontStyle::Normal => 31,
