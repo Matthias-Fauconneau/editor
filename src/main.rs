@@ -1,4 +1,4 @@
-use {std::sync::Arc, core::{Error,throws}, ui::text::{Style,Attribute,FontStyle}};
+use {std::sync::Arc, core::error::{throws,Error}, ui::text::{Style,Attribute,FontStyle}};
 
 pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> }
 #[cfg(feature="rust-analyzer")] mod highlight {
@@ -69,16 +69,16 @@ pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> 
 }
 
 #[throws] fn main() {
-	core::rstack_self()?;
-    let highlight = highlight::highlight()?;
-    if false {
+	//core::rstack_self()?;
+	let highlight = highlight::highlight()?;
+	if false {
 		for &Attribute{range: _range, attribute} in highlight.style.iter() {
 			fn print(text: &str, Style{color, style}: Style) {
 				let code = match style {
 					FontStyle::Normal => 31,
 					FontStyle::Bold => 1,
 				};
-				let ui::bgra8{b,g,r,..} = color.into();
+				let image::bgra8{b,g,r,..} = color.into();
 				print!("\x1b[{}m\x1b[38;2;{};{};{}m{}\x1b(B\x1b[m",code, r,g,b, text)
 			}
 			//print(&highlight.text[range], attribute);
@@ -86,5 +86,5 @@ pub struct StyledText { pub text: Arc<String>, pub style: Vec<Attribute<Style>> 
 		}
 		println!();
 	}
-    ui::app::run(ui::edit::Edit::new(&ui::text::default_font, ui::edit::Cow::Borrowed(ui::edit::Buffer{text: &highlight.text, style: &highlight.style})))?
+	ui::app::run(ui::edit::Edit::new(&ui::text::default_font, ui::edit::Cow::Borrowed(ui::edit::Buffer{text: &highlight.text, style: &highlight.style})))?
 }

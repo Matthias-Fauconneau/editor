@@ -8,7 +8,8 @@ edition = '2018'
 fehler = '' # #[throws] expects {{root}}::fehler
 core = { path='../core', features = ['fehler'] }
 itertools = ''
-ui = { path='../ui', features = ['edit','app','timeout','trace'] }
+image = { path='../image' }
+ui = { path='../ui', features = ['edit','app'] } #,'timeout','trace'] }
 rust-analyzer = { path='rust-analyzer', optional = true }
 
 [features]
