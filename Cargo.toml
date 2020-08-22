@@ -6,14 +6,13 @@ edition = '2018'
 
 [dependencies]
 fehler = '' # #[throws] expects {{root}}::fehler
-core = { path='../core', features = ['fehler'] }
-itertools = ''
-image = { path='../image' }
-ui = { path='../ui', features = ['edit','app'] } #,'timeout','trace'] }
-rust-analyzer = { path='rust-analyzer', optional = true }
+error = { version='', package='anyhow' }
+iter = { path='../iter' }
+ui = { path='../ui', features = ['edit','app','color'] }
+highlight = { path='highlight', optional = true }
 
 [features]
-highlight = ['rust-analyzer','ui/color']
+default = ['highlight']
 
 [profile.dev.package.image]
 opt-level = 2
