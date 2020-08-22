@@ -32,20 +32,5 @@ pub fn style(highlight: impl Iterator<Item=HighlightedRange>) -> impl Iterator<I
 
 #[throws] fn main() {
 	let TextHighlight{text, highlight} = highlight::highlight()?;
-	/*fn print(span: &str, Style{color, style}: Style) {
-		let code = match style {
-			FontStyle::Normal => 31,
-			FontStyle::Bold => 1,
-		};
-		let ui::color::bgra8{b,g,r,..} = color.into();
-		print!("\x1b[{}m\x1b[38;2;{};{};{}m{}\x1b(B\x1b[m",code, r,g,b, span)
-	}
-	let (mut current, mut attributes) = (None, style.iter().peekable());
-	for (index, span) in text.chars().enumerate() {
-		use iter::{PeekableExt, Single};
-		current = current.filter(|a:&&Attribute<Style>| a.contains(&(index as u32))).or_else(|| attributes.peeking_take_while(|a| a.contains(&(index as u32))).single());
-		print(&span.to_string(), current.map(|c| c.attribute).unwrap_or_default());
-	}
-	println!();*/
 	ui::app::run(ui::edit::Edit::new(&ui::text::default_font, ui::edit::Cow::Borrowed(ui::edit::Buffer{text: &text, style: &style(highlight.into_iter()).collect::<Vec::<_>>()})))?
 }
