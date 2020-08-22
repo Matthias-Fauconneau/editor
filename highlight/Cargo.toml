@@ -1,0 +1,23 @@
+[package]
+name = 'highlight'
+version = '0.0.0'
+authors = ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
+edition = '2018'
+description = "rust-analyzer crates hub wrapper as a dylib to speed up linking"
+repository = "https://github.com/Matthias-Fauconneau/editor"
+
+[lib]
+path = 'lib.rs'
+crate_type = ["dylib"] # speed up linking
+
+[dependencies]
+anyhow = ''
+fehler = ''
+log = ''
+env_logger = ''
+paths = { git = 'https://github.com/rust-analyzer/rust-analyzer.git' }
+ide_db = { git = 'https://github.com/rust-analyzer/rust-analyzer.git' }
+ide = { git = 'https://github.com/rust-analyzer/rust-analyzer.git' }
+rust-analyzer = { git = 'https://github.com/rust-analyzer/rust-analyzer.git' }
+syntax = { git = 'https://github.com/rust-analyzer/rust-analyzer.git' }
+profile = { git = 'https://github.com/rust-analyzer/rust-analyzer.git', optional=true }
