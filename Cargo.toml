@@ -11,8 +11,8 @@ iter = { path='../iter' }
 ui = { path='../ui', features = ['edit','app','color'] }
 highlight = { path='highlight', optional = true }
 
-[features]
-default = ['highlight']
+#[features]
+#default = ['highlight']
 
 [profile.dev.package.image]
 opt-level = 2
