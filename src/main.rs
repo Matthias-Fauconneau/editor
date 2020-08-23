@@ -40,7 +40,11 @@ use {fehler::throws, error::Error, ui::text::{unicode_segmentation::find,Attribu
 	ui::edit::Owned{text: std::str::from_utf8(&std::fs::read(path)?)?.to_owned(), style: ui::text::default_style.to_vec()}
 }
 #[throws] fn main() {
-	let buffer = buffer(std::path::Path::new("src/main.rs"))?;
+	let path = std::path::Path::new("src/main.rs");
+	let buffer = buffer(path)?;
 	#[cfg(not(feature="app"))] println!("{:?}", buffer);
-	#[cfg(feature="app")] ui::app::run(ui::edit::Edit::new(&ui::text::default_font, ui::edit::Cow::Owned(buffer)))?
+	#[cfg(feature="app")] ui::app::run(ui::edit::Edit::new(&ui::text::default_font, ui::edit::Cow::Owned(buffer), Some(Box::new(move |data| {
+		std::fs::write(path, data.text.as_bytes()).unwrap();
+		data.style = self::buffer(path).unwrap().style;
+	}))))?
 }
