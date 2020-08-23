@@ -1,0 +1,21 @@
+[package]
+name = 'server'
+version = '0.0.0'
+authors = ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
+edition = '2018'
+repository = 'https://github.com/Matthias-Fauconneau/editor'
+description = 'Rust analyzer semantic highlighting'
+
+[[bin]]
+name = 'server'
+path = 'main.rs'
+
+[dependencies]
+anyhow = ''
+fehler = ''
+ipc = {path='../ipc'}
+rust = {path='../rust',features=['ide']}
+paths = {path='../../rust-analyzer/crates/paths'}#git='https://github.com/rust-analyzer/rust-analyzer.git'}
+vfs = {path='../../rust-analyzer/crates/vfs'}#git='https://github.com/rust-analyzer/rust-analyzer.git'}
+ide = {features=['serde'],path='../../rust-analyzer/crates/ide'}#serde tags git='https://github.com/rust-analyzer/rust-analyzer.git'}
+rust-analyzer = {path='../../rust-analyzer/crates/rust-analyzer'}#git='https://github.com/rust-analyzer/rust-analyzer.git'}

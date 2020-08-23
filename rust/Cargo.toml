@@ -1,0 +1,17 @@
+[package]
+name = 'rust'
+version = '0.0.0'
+authors = ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
+edition = '2018'
+repository = 'https://github.com/Matthias-Fauconneau/editor'
+description = 'Rust analyzer semantic highlighting'
+[lib]
+path = 'lib.rs'
+[dependencies]
+serde = {version='',optional=true} #ln syntax_highlighting/tags
+fehler = ''
+anyhow = ''
+ipc = {path='../ipc'}
+ide = {features=['serde'],path='../../rust-analyzer/crates/ide',optional=true}#serde tags git='https://github.com/rust-analyzer/rust-analyzer.git'
+[features]
+default = ['serde'] #ln syntax_highlighting/tags

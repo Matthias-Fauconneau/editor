@@ -7,12 +7,13 @@ edition = '2018'
 [dependencies]
 fehler = '' # #[throws] expects {{root}}::fehler
 error = { version='', package='anyhow' }
-iter = { path='../iter' }
-ui = { path='../ui', features = ['edit','app','color'] }
-highlight = { path='highlight', optional = true }
+#iter = { path='../iter' }
+ui = { path='../ui', features = ['color','text','edit'] } #,'app'], optional=true }
+rust = { path='rust', optional = true }
 
-#[features]
-#default = ['highlight']
+[features]
+app = ['ui/app']
+default = ['rust','app']
 
 [profile.dev.package.image]
 opt-level = 2

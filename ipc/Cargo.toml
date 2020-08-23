@@ -1,0 +1,18 @@
+[package]
+name = 'ipc'
+version = '0.0.0'
+authors = ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
+edition = '2018'
+repository = 'https://github.com/Matthias-Fauconneau/editor'
+description = 'Unix IPC'
+[lib]
+path = 'lib.rs'
+
+[dependencies]
+anyhow = ''
+fehler = ''
+serde = {version='',features=["derive"]}
+bincode = ''
+sc = ''
+inotify = ''
+#fork = ''

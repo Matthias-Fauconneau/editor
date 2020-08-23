@@ -1,12 +1,12 @@
-use {fehler::throws, error::Error, ui::text::{Attribute,Style}};
-type Buffer = ui::edit::Buffer<std::sync::Arc<String>,Vec<Attribute<Style>>>;
+use {fehler::throws, error::Error, ui::text::{unicode_segmentation::find,Attribute,Style}};
 
-#[cfg(feature="highlight")] #[throws] fn buffer() -> Buffer {
-	use {highlight::{HighlightedRange, HighlightTag, HighlightModifier, TextHighlight}, ui::text::FontStyle, color::bgr};
-	pub fn style(highlight: impl Iterator<Item=HighlightedRange>) -> impl Iterator<Item=Attribute<Style>> {
-		highlight.map(|HighlightedRange{range, highlight, ..}| {
+#[cfg(feature="rust")] #[throws] fn buffer(path: &std::path::Path) -> ui::edit::Owned {
+	let text = std::str::from_utf8(&std::fs::read(path)?)?.to_owned();
+	use {rust::{HighlightedRange, HighlightTag, HighlightModifier}, ui::text::FontStyle, ui::color::bgr};
+	pub fn style<'t>(text: &'t str, highlight: impl Iterator<Item=HighlightedRange>+'t) -> impl Iterator<Item=Attribute<Style>> + 't {
+		highlight.map(move |HighlightedRange{range, highlight, ..}| {
 			Attribute{
-				range: range.start().into()..range.end().into(),
+				range: find(text, range.start as usize)..find(text, range.end as usize),
 				attribute: Style{
 					color: {use HighlightTag::*; match highlight.tag {
 						Module => bgr{b: 0., r: 1., g: 1./3.},
@@ -32,13 +32,15 @@ type Buffer = ui::edit::Buffer<std::sync::Arc<String>,Vec<Attribute<Style>>>;
 			}
 		})
 	}
-	let TextHighlight{text, highlight} = highlight::highlight()?;
-	Buffer{text, style: &style(highlight.into_iter()).collect::<Vec::<_>>()}
+	let style = style(&text, rust::highlight(path)?.into_iter()).collect::<Vec::<_>>();
+	ui::edit::Owned{text, style}
 }
 
-#[cfg(not(feature="highlight"))] #[throws] fn buffer() -> Buffer { Buffer{text: std::sync::Arc::new(std::str::from_utf8(&std::fs::read("src/main.rs")?)?.to_owned()), style: ui::text::default_style.to_vec()} }
-
+#[cfg(not(feature="rust"))] #[throws] fn buffer(path: &std::path::Path) -> ui::edit::Owned {
+	ui::edit::Owned{text: std::str::from_utf8(&std::fs::read(path)?)?.to_owned(), style: ui::text::default_style.to_vec()}
+}
 #[throws] fn main() {
-	let Buffer{text, style} = buffer()?;
-	ui::app::run(ui::edit::Edit::new(&ui::text::default_font, ui::edit::Cow::Borrowed(ui::edit::Buffer{text: &text, style: &style})))?
+	let buffer = buffer(std::path::Path::new("src/main.rs"))?;
+	#[cfg(not(feature="app"))] println!("{:?}", buffer);
+	#[cfg(feature="app")] ui::app::run(ui::edit::Edit::new(&ui::text::default_font, ui::edit::Cow::Owned(buffer)))?
 }
