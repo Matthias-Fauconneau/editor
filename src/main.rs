@@ -42,11 +42,30 @@ use {std::path::Path, fehler::throws, error::Error,
 fn from_index(text: &str, byte_index: usize) -> LineColumn { LineColumn::from_text_index(text, find(text, byte_index)).unwrap() }
 fn from(text: &str, range: rust::TextRange) -> Span { Span{start: from_index(text, range.start as usize), end: from_index(text, range.end as usize)} }
 
-struct Editor<'t>{path: &'t Path, edit: Edit<'t,'t>, diagnostics: Vec<rust::Diagnostic>}
+struct Editor<'t>{path: &'t Path, edit: Edit<'t,'t>}
+impl Editor<'_> {
+	fn event(&mut self, size: size, event_context: &EventContext, event: &Event) -> Change {
+		let change = self.edit.event(size, event_context, event);
+		use Change::*;
+		if let Insert|Remove|Other = change {
+				let Self{path, edit: Edit{view: View{data, ..}, ..}} = self;
+				let text = AsRef::<str>::as_ref(&data);
+				std::fs::write(&path, text.as_bytes()).unwrap();
+		}
+		change
+	}
+}
 impl Widget for Editor<'_> {
 	fn size(&mut self, size: size) -> size { self.edit.size(size) }
+	#[throws] fn paint(&mut self, target: &mut Target) { self.edit.paint(target)? }
+	#[throws] fn event(&mut self, size: size, event_context: &EventContext, event: &Event) -> bool { if self.event(size, event_context, event) != Change::None { true } else { false } }
+}
+
+struct CodeEditor<'t>{editor: Editor<'t>, diagnostics: Vec<rust::Diagnostic>}
+impl Widget for CodeEditor<'_> {
+	fn size(&mut self, size: size) -> size { self.editor.size(size) }
 	#[throws] fn paint(&mut self, target: &mut Target) {
-		let Self{edit: Edit{view, selection, ..}, diagnostics, ..} = self;
+		let Self{editor: Editor{edit: Edit{view, selection, ..}, ..}, diagnostics, ..} = self;
 		let scale = view.scale(target.size);
 		view.paint(target, scale);
 		let text = AsRef::<str>::as_ref(&view.data);
@@ -60,18 +79,16 @@ impl Widget for Editor<'_> {
 	}
 	#[throws] fn event(&mut self, size: size, event_context: &EventContext, event: &Event) -> bool {
 		use Change::*;
-		match self.edit.event(size, event_context, event) {
+		match self.editor.event(size, event_context, event) {
 			Cursor => true,
 			Insert|Remove|Other => {
-				let Self{path, edit: Edit{view: View{data, ..}, ..}, diagnostics} = self;
-				let text = AsRef::<str>::as_ref(&data);
-				std::fs::write(&path, text.as_bytes()).unwrap();
+				let Self{editor: Editor{path, edit: Edit{view: View{data, ..}, ..}, ..}, diagnostics} = self;
 				data.get_mut().style = self::buffer(path).unwrap().style;
 				*diagnostics = rust::diagnostics(path)?;
 				true
 			}
 			None => {
-				let Self{path, edit:Edit{view: View{data, ..}, selection, ..}, diagnostics} = self;
+				let Self{editor: Editor{path, edit: Edit{view: View{data, ..}, selection, ..}}, diagnostics} = self;
 				let text = AsRef::<str>::as_ref(&data);
 				let EventContext{modifiers_state: ModifiersState{alt,..}, ..} = event_context;
 				match event {
@@ -94,10 +111,10 @@ impl Widget for Editor<'_> {
 	let path : Option<std::path::PathBuf> = std::env::args().nth(1).map(|a| a.into());
 	if let Some(path) = path.as_ref().filter(|p| p.is_dir()) { std::env::set_current_dir(path)?; }
 	if let Some(path) = path.filter(|p| p.is_file()) {
-		let text = std::fs::read(path)?;
-		run(Edit::new(&default_font, Cow::Borrowed(Borrowed{text: &std::str::from_utf8(&text)?, style: &default_style})))?
+		let text = std::fs::read(&path)?;
+		run(Editor{path: &path, edit: Edit::new(&default_font, Cow::Borrowed(Borrowed{text: &std::str::from_utf8(&text)?, style: &default_style}))})?
 	} else {
 		let path = Path::new("src/main.rs");
-		run(Editor{path, edit: Edit::new(&default_font, Cow::Owned(buffer(path)?)), diagnostics: rust::diagnostics(path)?})?
+		run(CodeEditor{editor: Editor{path, edit: Edit::new(&default_font, Cow::Owned(buffer(path)?))}, diagnostics: rust::diagnostics(path)?})?
 	}
 }
