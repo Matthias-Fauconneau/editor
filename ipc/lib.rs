@@ -58,7 +58,7 @@ pub trait Request {
 	server.write(&serialize(&request)?)?;
 	let mut reply = Vec::new();
 	let size = server.read_to_end(&mut reply)?;
-	deserialize(&reply[0..size])?
+	deserialize::<Result<R::Reply,String>>(&reply[0..size])?.map_err(|e| Error::msg(e))?
 }
 
 #[throws] pub fn spawn<S:Server>(mut server: S) {

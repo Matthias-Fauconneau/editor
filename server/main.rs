@@ -1,4 +1,5 @@
-use std::path::{Path, PathBuf};
+#![feature(default_free_fn)]
+use std::{default::default, path::{Path, PathBuf}};
 use {fehler::throws, anyhow::Error};
 
 fn from(range: &text_size::TextRange) -> std::ops::Range<u32> { range.start().into()..range.end().into() } // serde
@@ -32,6 +33,10 @@ impl rust::Rust for Analyzer {
 	#[throws] fn definition(&self, path: &Path, offset: u32) -> Option<rust::NavigationTarget> {
 		self.host.analysis().goto_definition(ide::FilePosition{file_id: self.file_id(path)?, offset: offset.into()})?
 		.map(|v| v.info.first().map(|ide::NavigationTarget{file_id, full_range, ..}| rust::NavigationTarget{path: self.path(file_id).unwrap(), range: from(full_range)})).flatten()
+	}
+	#[throws] fn diagnostics(&self, path: &Path) -> Vec<rust::Diagnostic> {
+		self.host.analysis().diagnostics(&default(), self.file_id(path)?)?
+			.into_iter().map(|ide::Diagnostic{message, range, ..}| rust::Diagnostic{message, range: from(&range)}).collect::<Vec<_>>()
 	}
 }
 

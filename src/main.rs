@@ -53,6 +53,7 @@ use {std::path::Path, fehler::throws, error::Error,
 					let text = AsRef::<str>::as_ref(&data);
 					std::fs::write(&path, text.as_bytes()).unwrap();
 					data.get_mut().style = self::buffer(path).unwrap().style;
+					println!("{:?}", rust::diagnostics(path));
 					true
 				}
 				None => {
