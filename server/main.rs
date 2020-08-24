@@ -2,7 +2,7 @@
 use std::{default::default, path::{Path, PathBuf}};
 use {fehler::throws, anyhow::Error};
 
-fn from(range: &text_size::TextRange) -> std::ops::Range<u32> { range.start().into()..range.end().into() } // serde
+fn from(range: &text_size::TextRange) -> rust::TextRange { rust::TextRange{start: range.start().into(), end: range.end().into()} } // serde
 
 struct Analyzer {
 		host: ide::AnalysisHost,

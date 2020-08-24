@@ -51,8 +51,8 @@ fn from(text: &str, range: rust::TextRange) -> Span { Span{start: from_index(tex
 			let scale = view.scale(target.size);
 			view.paint(target, scale);
 			let text = AsRef::<str>::as_ref(&view.data);
-			for rust::Diagnostic{range, ..} in diagnostics { view.paint_span(target, scale, from(text, *range)); }
-			view.paint_span(target, scale, *selection);
+			for rust::Diagnostic{range, ..} in diagnostics { view.paint_span(target, scale, from(text, *range), ui::color::bgr{b: false, g: false, r: true}); }
+			view.paint_span(target, scale, *selection, ui::color::bgr{b: true, g: false, r: false});
 		}
     #[throws] fn event(&mut self, size: size, event_context: &EventContext, event: &Event) -> bool {
 			use Change::*;
@@ -68,14 +68,16 @@ fn from(text: &str, range: rust::TextRange) -> Span { Span{start: from_index(tex
 					true
 				}
 				None => {
-					let Self{path, edit:Edit{view: View{data, ..}, selection, ..}, ..} = self;
+					let Self{path, edit:Edit{view: View{data, ..}, selection, ..}, diagnostics} = self;
 					let text = AsRef::<str>::as_ref(&data);
 					let EventContext{modifiers_state: ModifiersState{alt,..}, ..} = event_context;
 					match event {
 						Event::Key{key:'→'} if *alt => {
-							let target = dbg!(rust::definition(path, index(text, text::index(text, selection.end))))?;
-							if let Some(target) = target { *selection = from(text, target.range); }
+							if let Some(rust::NavigationTarget{range, ..}) = dbg!(rust::definition(path, index(text, text::index(text, selection.end))))? { *selection = from(text, range); }
 							true
+						},
+						Event::Key{key:'⎙'} => {
+							if let Some(rust::Diagnostic{range, ..}) = diagnostics.first() { *selection = from(text, *range); true } else { false }
 						},
 						_ => false
 					}
@@ -83,5 +85,5 @@ fn from(text: &str, range: rust::TextRange) -> Span { Span{start: from_index(tex
 			}
 		}
 	}
-	ui::app::run(Editor{path, edit: ui::edit::Edit::new(&ui::text::default_font, ui::edit::Cow::Owned(buffer)), diagnostics: Vec::new()})?
+	ui::app::run(Editor{path, edit: ui::edit::Edit::new(&ui::text::default_font, ui::edit::Cow::Owned(buffer)), diagnostics: rust::diagnostics(path)?})?
 }
