@@ -1,6 +1,7 @@
-use {fehler::throws, error::Error, ui::text::{unicode_segmentation::find,Attribute,Style}};
+use {std::path::Path, fehler::throws, error::Error,
+				ui::{text::{self, unicode_segmentation::{index, find},Attribute,Style,View,LineColumn}, widget::{size, Target, EventContext, ModifiersState, Event, Widget}, edit::{Edit,Change,Span}}};
 
-#[cfg(feature="rust")] #[throws] fn buffer(path: &std::path::Path) -> ui::edit::Owned {
+#[throws] fn buffer(path: &Path) -> ui::edit::Owned {
 	let text = std::str::from_utf8(&std::fs::read(path)?)?.to_owned();
 	use {rust::{HighlightedRange, HighlightTag, HighlightModifier}, ui::text::FontStyle, ui::color::bgr};
 	pub fn style<'t>(text: &'t str, highlight: impl Iterator<Item=HighlightedRange>+'t) -> impl Iterator<Item=Attribute<Style>> + 't {
@@ -36,15 +37,39 @@ use {fehler::throws, error::Error, ui::text::{unicode_segmentation::find,Attribu
 	ui::edit::Owned{text, style}
 }
 
-#[cfg(not(feature="rust"))] #[throws] fn buffer(path: &std::path::Path) -> ui::edit::Owned {
-	ui::edit::Owned{text: std::str::from_utf8(&std::fs::read(path)?)?.to_owned(), style: ui::text::default_style.to_vec()}
-}
 #[throws] fn main() {
-	let path = std::path::Path::new("src/main.rs");
+	let path = Path::new("src/main.rs");
 	let buffer = buffer(path)?;
-	#[cfg(not(feature="app"))] println!("{:?}", buffer);
-	#[cfg(feature="app")] ui::app::run(ui::edit::Edit::new(&ui::text::default_font, ui::edit::Cow::Owned(buffer), Some(Box::new(move |data| {
-		std::fs::write(path, data.text.as_bytes()).unwrap();
-		data.style = self::buffer(path).unwrap().style;
-	}))))?
+	struct Editor<'t>{path: &'t Path, edit: Edit<'t,'t>};
+	impl Widget for Editor<'_> {
+		fn size(&mut self, size: size) -> size { self.edit.size(size) }
+    fn paint(&mut self, target: &mut Target) -> Result<(),Error> { self.edit.paint(target) }
+    #[throws] fn event(&mut self, size: size, event_context: &EventContext, event: &Event) -> bool {
+			use Change::*;
+			match self.edit.event(size, event_context, event) {
+				Cursor => true,
+				Insert|Remove|Other => {
+					let Self{path, edit: Edit{view: View{data, ..}, ..}} = self;
+					let text = AsRef::<str>::as_ref(&data);
+					std::fs::write(&path, text.as_bytes()).unwrap();
+					data.get_mut().style = self::buffer(path).unwrap().style;
+					true
+				}
+				None => {
+					let Self{path, edit:Edit{view: View{data, ..}, selection, ..}} = self;
+					let text = AsRef::<str>::as_ref(&data);
+					let EventContext{modifiers_state: ModifiersState{alt,..}, ..} = event_context;
+					match event {
+						Event::Key{key:'→'} if *alt => {
+							let target = dbg!(rust::definition(path, index(text, text::index(text, selection.end))))?;
+							if let Some(target) = target { *selection = Span::new(LineColumn::from_text_index(text, find(text, target.range.start as usize)).unwrap()); }
+							true
+						},
+						_ => false
+					}
+				}
+			}
+		}
+	}
+	ui::app::run(Editor{path, edit: ui::edit::Edit::new(&ui::text::default_font, ui::edit::Cow::Owned(buffer))})?
 }
