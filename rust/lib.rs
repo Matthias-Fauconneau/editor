@@ -1,21 +1,25 @@
-use std::{ops::Range, path::{Path, PathBuf}};
+use std::path::{Path, PathBuf};
 use serde::{Serialize, Deserialize};
+#[derive(Clone,Copy,Serialize,Deserialize,Debug)] pub struct TextRange { pub start: u32, pub end: u32 }
 #[cfg(not(feature="ide"))] mod ide; // syntax_highlighting/tags
 pub use ide::{HighlightTag, HighlightModifier, Highlight};
 
 #[derive(Serialize,Deserialize)] pub struct HighlightedRange {
-  pub range: Range<u32>,
+  pub range: TextRange,
   pub highlight: Highlight,
+  // binding_hash
 }
 
 #[derive(Serialize,Deserialize,Debug)] pub struct NavigationTarget {
 	pub path: PathBuf,
-	pub range: Range<u32>,
+	pub range: TextRange,
+	// full_range, name, kind, container_name, description, docs
 }
 
 #[derive(Serialize,Deserialize,Debug)] pub struct Diagnostic {
 	pub message: String,
-	pub range: Range<u32>,
+	pub range: TextRange,
+	// severity, fix
 }
 
 pub trait Rust {
