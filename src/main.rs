@@ -1,5 +1,7 @@
 use {std::path::Path, fehler::throws, error::Error,
-				ui::{text::{self, unicode_segmentation::{index, find},Attribute,Style,View,LineColumn,Span}, widget::{size, Target, EventContext, ModifiersState, Event, Widget}, edit::{Edit,Change}}};
+				ui::{text::{self, unicode_segmentation::{index, find},Attribute,Style,View,LineColumn,Span,default_font, default_style},
+				widget::{size, Target, EventContext, ModifiersState, Event, Widget},
+				edit::{Cow,Edit,Change}, app::run}};
 
 #[throws] fn buffer(path: &Path) -> ui::edit::Owned {
 	let text = std::str::from_utf8(&std::fs::read(path)?)?.to_owned();
@@ -51,8 +53,13 @@ fn from(text: &str, range: rust::TextRange) -> Span { Span{start: from_index(tex
 			let scale = view.scale(target.size);
 			view.paint(target, scale);
 			let text = AsRef::<str>::as_ref(&view.data);
-			for rust::Diagnostic{range, ..} in diagnostics { view.paint_span(target, scale, from(text, *range), ui::color::bgr{b: false, g: false, r: true}); }
+			for rust::Diagnostic{range, ..} in diagnostics.iter() { view.paint_span(target, scale, from(text, *range), ui::color::bgr{b: false, g: false, r: true}); }
 			view.paint_span(target, scale, *selection, ui::color::bgr{b: true, g: false, r: false});
+			if let Some(rust::Diagnostic{message, ..}) = diagnostics.first() {
+				let mut view = View{font: &default_font, data: 	ui::edit::Borrowed{text: message, style: &default_style}};
+				let size = text::fit(target.size, view.size());
+				Widget::paint(&mut view, &mut target.rows_mut(target.size.y-size.y..target.size.y))?;
+			}
 		}
     #[throws] fn event(&mut self, size: size, event_context: &EventContext, event: &Event) -> bool {
 			use Change::*;
@@ -85,5 +92,5 @@ fn from(text: &str, range: rust::TextRange) -> Span { Span{start: from_index(tex
 			}
 		}
 	}
-	ui::app::run(Editor{path, edit: ui::edit::Edit::new(&ui::text::default_font, ui::edit::Cow::Owned(buffer)), diagnostics: rust::diagnostics(path)?})?
+	run(Editor{path, edit: Edit::new(&default_font, Cow::Owned(buffer)), diagnostics: rust::diagnostics(path)?})?
 }
