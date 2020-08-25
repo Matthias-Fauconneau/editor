@@ -9,6 +9,10 @@ fehler = ''
 error = {version='', package='anyhow'}
 ui = {path='../ui', features = ['color','text','edit','app']}
 rust = {path='rust'}
+trace = {path='../trace', optional=true}
+
+[features]
+default  = ['trace']
 
 [profile.dev.package.image]
 opt-level = 2

@@ -108,6 +108,7 @@ impl Widget for CodeEditor<'_> {
 }
 
 #[throws] fn main() {
+	trace::sigint();
 	let path : Option<std::path::PathBuf> = std::env::args().nth(1).map(|a| a.into());
 	if let Some(path) = path.as_ref().filter(|p| p.is_dir()) { std::env::set_current_dir(path)?; }
 	if let Some(path) = path.filter(|p| p.is_file()) {
