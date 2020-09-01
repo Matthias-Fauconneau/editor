@@ -9,6 +9,7 @@ fehler = ''
 error = {version='', package='anyhow'}
 ui = {path='../ui', features = ['color','text','edit','app']}
 rust = {path='rust'}
+cargo = {path='cargo'}
 trace = {path='../trace', optional=true}
 
 [features]

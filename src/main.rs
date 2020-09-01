@@ -35,15 +35,21 @@ use {std::path::Path, fehler::throws, error::Error,
 			}
 		})
 	}
-	let style = style(&text, rust::highlight(path)?.into_iter()).collect::<Vec::<_>>();
+	pub fn time<T>(task: impl FnOnce() -> T) -> T {
+		let time = std::time::Instant::now();
+		let result = task();
+		eprintln!("{:?}", time.elapsed()); //.as_millis()
+		result
+	}
+	let style = style(&text, time(|| rust::highlight(path))?.into_iter()).collect::<Vec::<_>>();
 	ui::edit::Owned{text, style}
 }
 
 fn from_index(text: &str, byte_index: usize) -> LineColumn { LineColumn::from_text_index(text, find(text, byte_index)).unwrap() }
 fn from(text: &str, range: rust::TextRange) -> Span { Span{start: from_index(text, range.start as usize), end: from_index(text, range.end as usize)} }
 
-struct Editor<'t>{path: &'t Path, edit: Edit<'t,'t>}
-impl Editor<'_> {
+struct Editor<'f, 't>{path: std::path::PathBuf, edit: Edit<'f,'t>}
+impl Editor<'_, '_> {
 	fn event(&mut self, size: size, event_context: &EventContext, event: &Event) -> Change {
 		let change = self.edit.event(size, event_context, event);
 		use Change::*;
@@ -55,23 +61,32 @@ impl Editor<'_> {
 		change
 	}
 }
-impl Widget for Editor<'_> {
+impl Widget for Editor<'_, '_> {
 	fn size(&mut self, size: size) -> size { self.edit.size(size) }
 	#[throws] fn paint(&mut self, target: &mut Target) { self.edit.paint(target)? }
 	#[throws] fn event(&mut self, size: size, event_context: &EventContext, event: &Event) -> bool { if self.event(size, event_context, event) != Change::None { true } else { false } }
 }
 
-struct CodeEditor<'t>{editor: Editor<'t>, diagnostics: Vec<rust::Diagnostic>}
-impl Widget for CodeEditor<'_> {
+struct CodeEditor<'f, 't>{editor: Editor<'f, 't>, diagnostics: Vec<rust::Diagnostic>, message: Option<String>, args: Vec<String>}
+impl CodeEditor<'_, '_> {
+	#[throws] fn update(&mut self) {
+		let Self{editor: Editor{path, edit: Edit{view: View{data, ..}, ..}, ..}, diagnostics, ..} = self;
+		*data = Cow::Owned(self::buffer(path)?);
+		*diagnostics = rust::diagnostics(path)?;
+		self.message = diagnostics.first().map(|rust::Diagnostic{message, ..}| message.clone());
+	}
+}
+
+impl Widget for CodeEditor<'_, '_> {
 	fn size(&mut self, size: size) -> size { self.editor.size(size) }
 	#[throws] fn paint(&mut self, target: &mut Target) {
-		let Self{editor: Editor{edit: Edit{view, selection, ..}, ..}, diagnostics, ..} = self;
+		let Self{editor: Editor{edit: Edit{view, selection, ..}, ..}, diagnostics, message, ..} = self;
 		let scale = view.scale(target.size);
 		view.paint(target, scale);
 		let text = AsRef::<str>::as_ref(&view.data);
 		for rust::Diagnostic{range, ..} in diagnostics.iter() { view.paint_span(target, scale, from(text, *range), ui::color::bgr{b: false, g: false, r: true}); }
 		view.paint_span(target, scale, *selection, ui::color::bgr{b: true, g: false, r: false});
-		if let Some(rust::Diagnostic{message, ..}) = diagnostics.first() {
+		if let Some(message) = message {
 			let mut view = View{font: &default_font, data: 	Borrowed{text: message, style: &default_style}};
 			let size = text::fit(target.size, view.size());
 			Widget::paint(&mut view, &mut target.rows_mut(target.size.y-size.y..target.size.y))?;
@@ -82,13 +97,11 @@ impl Widget for CodeEditor<'_> {
 		match self.editor.event(size, event_context, event) {
 			Cursor => true,
 			Insert|Remove|Other => {
-				let Self{editor: Editor{path, edit: Edit{view: View{data, ..}, ..}, ..}, diagnostics} = self;
-				data.get_mut().style = self::buffer(path).unwrap().style;
-				*diagnostics = rust::diagnostics(path)?;
+				self.update()?;
 				true
 			}
 			None => {
-				let Self{editor: Editor{path, edit: Edit{view: View{data, ..}, selection, ..}}, diagnostics} = self;
+				let Self{editor: Editor{path, edit: Edit{view: View{data, ..}, selection, ..}}, diagnostics, args, ..} = self;
 				let text = AsRef::<str>::as_ref(&data);
 				let EventContext{modifiers_state: ModifiersState{alt,..}, ..} = event_context;
 				match event {
@@ -97,8 +110,18 @@ impl Widget for CodeEditor<'_> {
 						true
 					},
 					Event::Key{key:'⎙'} => {
-						if let Some(rust::Diagnostic{range, ..}) = diagnostics.first() { *selection = from(text, *range); true }
-						else { std::process::Command::new("cargo").arg("run").spawn()?; false }
+						if let Some(rust::Diagnostic{range, ..}) = diagnostics.first() { *selection = from(text, *range); }
+						else if let Some(cargo::Diagnostic{message, spans, ..}, ..) = cargo::build(args)? {
+							self.message = Some(message);
+							let cargo::Span{file_name, line_start, column_start, line_end, column_end, ..} = spans.into_iter().next().unwrap();
+							*path = file_name.into();
+							self.update()?;
+							self.editor.edit.selection = Span{start:LineColumn{line:line_start-1, column:column_start-1}, end:LineColumn{line:line_end-1, column:column_end-1}};
+						} else {
+							self.message = Option::None;
+							std::process::Command::new("cargo").arg("run").spawn()?; // todo: stdout → message
+						}
+						true
 					},
 					_ => false
 				}
@@ -109,13 +132,15 @@ impl Widget for CodeEditor<'_> {
 
 #[throws] fn main() {
 	trace::sigint();
-	let path : Option<std::path::PathBuf> = std::env::args().nth(1).map(|a| a.into());
+	let mut args = std::env::args().skip(1);
+	let path : Option<std::path::PathBuf> = args.next().map(|a| a.into());
 	if let Some(path) = path.as_ref().filter(|p| p.is_dir()) { std::env::set_current_dir(path)?; }
 	if let Some(path) = path.filter(|p| p.is_file()) {
 		let text = std::fs::read(&path)?;
-		run(Editor{path: &path, edit: Edit::new(&default_font, Cow::Borrowed(Borrowed{text: &std::str::from_utf8(&text)?, style: &default_style}))})?
+		run(Editor{path, edit: Edit::new(&default_font, Cow::Borrowed(Borrowed{text: &std::str::from_utf8(&text)?, style: &default_style}))})?
 	} else {
 		let path = Path::new("src/main.rs");
-		run(CodeEditor{editor: Editor{path, edit: Edit::new(&default_font, Cow::Owned(buffer(path)?))}, diagnostics: rust::diagnostics(path)?})?
+		run(CodeEditor{editor: Editor{path: path.to_path_buf(), edit: Edit::new(&default_font, Cow::Owned(buffer(path)?))}, diagnostics: rust::diagnostics(path)?, message: None,
+															args: args.collect()})?
 	}
 }
