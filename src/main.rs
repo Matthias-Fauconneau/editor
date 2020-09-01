@@ -35,13 +35,7 @@ use {std::path::Path, fehler::throws, error::Error,
 			}
 		})
 	}
-	pub fn time<T>(task: impl FnOnce() -> T) -> T {
-		let time = std::time::Instant::now();
-		let result = task();
-		eprintln!("{:?}", time.elapsed()); //.as_millis()
-		result
-	}
-	let style = style(&text, time(|| rust::highlight(path))?.into_iter()).collect::<Vec::<_>>();
+	let style = style(&text, rust::highlight(path)?.into_iter()).collect::<Vec::<_>>();
 	ui::edit::Owned{text, style}
 }
 
@@ -112,10 +106,10 @@ impl Widget for CodeEditor<'_, '_> {
 					Event::Key{key:'⎙'} => {
 						if let Some(rust::Diagnostic{range, ..}) = diagnostics.first() { *selection = from(text, *range); }
 						else if let Some(cargo::Diagnostic{message, spans, ..}, ..) = cargo::build(args)? {
-							self.message = Some(message);
 							let cargo::Span{file_name, line_start, column_start, line_end, column_end, ..} = spans.into_iter().next().unwrap();
 							*path = file_name.into();
 							self.update()?;
+							self.message = Some(message);
 							self.editor.edit.selection = Span{start:LineColumn{line:line_start-1, column:column_start-1}, end:LineColumn{line:line_end-1, column:column_end-1}};
 						} else {
 							self.message = Option::None;
