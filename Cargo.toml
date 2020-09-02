@@ -15,5 +15,5 @@ trace = {path='../trace', optional=true}
 [features]
 default  = ['trace']
 
-[profile.dev.package.image]
+[profile.dev.package."*"]
 opt-level = 2
