@@ -75,8 +75,7 @@ impl Widget for CodeEditor<'_, '_> {
 	fn size(&mut self, size: size) -> size { self.editor.size(size) }
 	#[throws] fn paint(&mut self, target: &mut Target) {
 		let Self{editor: Editor{edit: Edit{view, selection, ..}, ..}, diagnostics, message, ..} = self;
-		let scale = view.scale(target.size);
-		view.paint(target, scale);
+		let scale = view.paint_fit(target);
 		let text = AsRef::<str>::as_ref(&view.data);
 		for rust::Diagnostic{range, ..} in diagnostics.iter() { view.paint_span(target, scale, from(text, *range), ui::color::bgr{b: false, g: false, r: true}); }
 		view.paint_span(target, scale, *selection, ui::color::bgr{b: true, g: false, r: false});
@@ -125,7 +124,7 @@ impl Widget for CodeEditor<'_, '_> {
 }
 
 #[throws] fn main() {
-	trace::sigint();
+	#[cfg(feature="trace")] trace::sigint();
 	let mut args = std::env::args().skip(1);
 	let path : Option<std::path::PathBuf> = args.next().map(|a| a.into());
 	if let Some(path) = path.as_ref().filter(|p| p.is_dir()) { std::env::set_current_dir(path)?; }

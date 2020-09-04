@@ -12,8 +12,23 @@ rust = {path='rust'}
 cargo = {path='cargo'}
 trace = {path='../trace', optional=true}
 
-[features]
-default  = ['trace']
-
-[profile.dev.package."*"]
+[profile.dev.package.ttf-parser]
+opt-level = 2
+[profile.dev.package.unicode-segmentation]
+opt-level = 2
+[profile.dev.package.image]
+opt-level = 2
+[profile.dev.package.rust]
+opt-level = 2
+[profile.dev.package.ipc]
+opt-level = 2
+[profile.dev.package.bincode]
+opt-level = 2
+[profile.dev.package.byteorder]
+opt-level = 2
+[profile.dev.package.serde]
+opt-level = 2
+[profile.dev.package.std]
+opt-level = 2
+[profile.dev.package.core]
 opt-level = 2
