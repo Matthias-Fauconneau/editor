@@ -46,11 +46,9 @@ fn from(text: &str, range: rust::TextRange) -> Span { Span{start: from_index(tex
 impl Editor<'_, '_> {
 	fn event(&mut self, size: size, event_context: &EventContext, event: &Event) -> Change {
 		let change = self.scroll.event(size, event_context, event);
-		use Change::*;
-		if let Insert|Remove|Other = change {
-				let Self{path, scroll: Scroll{edit: Edit{view: View{data, ..}, ..}, ..}} = self;
-				let text = AsRef::<str>::as_ref(&data);
-				std::fs::write(&path, text.as_bytes()).unwrap();
+		if let Change::Insert|Change::Remove|Change::Other = change {
+				let Self{path, scroll: Scroll{edit: Edit{view, ..}, ..}} = self;
+				std::fs::write(&path, view.text().as_bytes()).unwrap();
 		}
 		change
 	}
@@ -64,8 +62,9 @@ impl Widget for Editor<'_, '_> {
 struct CodeEditor<'f, 't>{editor: Editor<'f, 't>, diagnostics: Vec<rust::Diagnostic>, message: Option<String>, args: Vec<String>}
 impl CodeEditor<'_, '_> {
 	#[throws] fn update(&mut self) {
-		let Self{editor: Editor{path, scroll: Scroll{edit: Edit{view: View{data, ..}, ..}, ..}}, diagnostics, ..} = self;
-		*data = Cow::Owned(self::buffer(path)?);
+		let Self{editor: Editor{path, scroll: Scroll{edit: Edit{view, ..}, ..}}, diagnostics, ..} = self;
+		view.size = None;
+		view.data = Cow::Owned(self::buffer(path)?);
 		*diagnostics = rust::diagnostics(path)?;
 		self.message = diagnostics.first().map(|rust::Diagnostic{message, ..}| message.clone());
 	}
@@ -75,26 +74,24 @@ impl Widget for CodeEditor<'_, '_> {
 	fn size(&mut self, size: size) -> size { self.editor.size(size) }
 	#[throws] fn paint(&mut self, target: &mut Target) {
 		let Self{editor: Editor{scroll, ..}, diagnostics, message, ..} = self;
-		let (scale, offset) = scroll.paint_fit(target);
-		let Scroll{edit: Edit{view, selection, ..}, ..} = scroll;
-		let text = AsRef::<str>::as_ref(&view.data);
-		for rust::Diagnostic{range, ..} in diagnostics.iter() { view.paint_span(target, scale, offset, from(text, *range), ui::color::bgr{b: false, g: false, r: true}); }
-		view.paint_span(target, scale, offset, *selection, ui::color::bgr{b: true, g: false, r: false});
+		let scale = scroll.paint_fit(target);
+		let Scroll{edit: Edit{view, selection, ..}, offset} = scroll;
+		for rust::Diagnostic{range, ..} in diagnostics.iter() { view.paint_span(target, scale, *offset, from(view.text(), *range), ui::color::bgr{b: false, g: false, r: true}); }
+		view.paint_span(target, scale, *offset, *selection, ui::color::bgr{b: true, g: false, r: false});
 		if let Some(message) = message {
-			let mut view = View{font: &default_font, data: 	Borrowed{text: message, style: &default_style}};
+			let mut view = View{font: &default_font, data: 	Borrowed{text: message, style: &default_style}, size: None};
 			let size = text::fit(target.size, view.size());
 			Widget::paint(&mut view, &mut target.rows_mut(target.size.y-size.y..target.size.y))?;
 		}
 	}
 	#[throws] fn event(&mut self, size: size, event_context: &EventContext, event: &Event) -> bool {
-		use Change::*;
 		match self.editor.event(size, event_context, event) {
-			Cursor => true,
-			Insert|Remove|Other => {
+			Change::Cursor|Change::Scroll => true,
+			Change::Insert|Change::Remove|Change::Other => {
 				self.update()?;
 				true
 			}
-			None => {
+			Change::None => {
 				let Self{editor: Editor{path, scroll: Scroll{edit: Edit{view: View{data, ..}, selection, ..}, ..}}, diagnostics, args, ..} = self;
 				let text = AsRef::<str>::as_ref(&data);
 				let EventContext{modifiers_state: ModifiersState{alt,..}, ..} = event_context;
@@ -112,7 +109,7 @@ impl Widget for CodeEditor<'_, '_> {
 							self.message = Some(message);
 							self.editor.scroll.edit.selection = Span{start:LineColumn{line:line_start-1, column:column_start-1}, end:LineColumn{line:line_end-1, column:column_end-1}};
 						} else {
-							self.message = Option::None;
+							self.message = None;
 							std::process::Command::new("cargo").arg("run").spawn()?; // todo: stdout → message
 						}
 						true
