@@ -1,5 +1,5 @@
 use {std::path::{Path, PathBuf}, fehler::throws, error::Error,
-				ui::{time, text::{self, unicode_segmentation::{index, find},Attribute,Style,View,LineColumn,Span,default_font, default_style},
+				ui::{text::{self, unicode_segmentation::{index, find},Attribute,Style,View,LineColumn,Span,default_font, default_style},
 				widget::{size, Target, EventContext, ModifiersState, Event, Widget},
 				edit::{Borrowed,Cow,Scroll,Edit,Change}, app::run}};
 
@@ -35,7 +35,8 @@ use {std::path::{Path, PathBuf}, fehler::throws, error::Error,
 			}
 		})
 	}
-	let style = style(&text, time!(rust::highlight(path))?.into_iter()).collect::<Vec::<_>>();
+	let style = style(&text, rust::highlight(path)?.into_iter()).collect::<Vec::<_>>();
+	//let style = style(&text, trace::timeout_(100, || rust::highlight(path), path.display().to_string())??.into_iter()).collect::<Vec::<_>>();
 	ui::edit::Owned{text, style}
 }
 
@@ -71,7 +72,7 @@ impl CodeEditor<'_, '_> {
 		let Self{editor: Editor{path, scroll: Scroll{edit: Edit{view, ..}, ..}}, diagnostics, ..} = self;
 		view.size = None;
 		view.data = Cow::Owned(self::buffer(path)?);
-		*diagnostics = time!(rust::diagnostics(path))?;
+		*diagnostics = rust::diagnostics(path)?;
 		self.message = diagnostics.first().map(|rust::Diagnostic{message, ..}| message.clone());
 	}
 	#[throws] fn view(&mut self, path: PathBuf) {
@@ -81,7 +82,7 @@ impl CodeEditor<'_, '_> {
 }
 
 impl Widget for CodeEditor<'_, '_> {
-	fn size(&mut self, size: size) -> size { time!(self.editor.size(size)) }
+	fn size(&mut self, size: size) -> size { self.editor.size(size) }
 	#[throws] fn paint(&mut self, target: &mut Target) {
 		let Self{editor: Editor{scroll, ..}, diagnostics, message, ..} = self;
 		let scale = scroll.paint_fit(target);
@@ -89,7 +90,7 @@ impl Widget for CodeEditor<'_, '_> {
 		for rust::Diagnostic{range, ..} in diagnostics.iter() { view.paint_span(target, scale, *offset, from(view.text(), *range), ui::color::bgr{b: false, g: false, r: true}); }
 		view.paint_span(target, scale, *offset, *selection, ui::color::bgr{b: true, g: true, r: true});
 		if let Some(message) = message {
-			let mut view = View{font: &default_font, data: 	Borrowed{text: message, style: &default_style}, size: None};
+			let mut view = View::new(Borrowed{text: message, style: &default_style});
 			let size = text::fit(target.size, view.size());
 			Widget::paint(&mut view, &mut target.rows_mut(target.size.y-size.y..target.size.y))?;
 		}
@@ -150,17 +151,16 @@ impl Widget for CodeEditor<'_, '_> {
 }
 
 #[throws] fn main() {
-	#[cfg(feature="trace")] trace::sigint();
 	let mut args = std::env::args().skip(1);
 	let path : std::path::PathBuf = args.next().map(|a| a.into()).unwrap_or(std::env::current_dir()?);
 	if let Some(project) = path.ancestors().find(|p| p.join("Cargo.toml").is_file()) {
 		std::env::set_current_dir(project)?;
 		let path = if path.is_file() { path } else { "src/main.rs".into() };
-		let scroll = Scroll::new(Edit::new(&default_font, Cow::Owned(buffer(&path)?)));
+		let scroll = Scroll::new(Edit::new(default_font(), Cow::Owned(buffer(&path)?)));
 		let diagnostics = rust::diagnostics(&path)?;
 		run(CodeEditor{editor: Editor{path, scroll}, diagnostics, message: None, args: args.collect(), history: Vec::new()})?
 	} else {
 		let text = std::fs::read(&path)?;
-		run(Editor{path, scroll: Scroll::new(Edit::new(&default_font, Cow::Borrowed(Borrowed{text: &std::str::from_utf8(&text)?, style: &default_style})))})?
+		run(Editor{path, scroll: Scroll::new(Edit::new(default_font(), Cow::Borrowed(Borrowed{text: &std::str::from_utf8(&text)?, style: &default_style})))})?
 	}
 }

@@ -24,10 +24,11 @@ impl Analyzer {
 impl rust::Rust for Analyzer {
 	#[throws] fn highlight(&mut self, path: &Path) -> Vec<rust::HighlightedRange> {
 		let file_id = self.file_id(path)?;
-		let mut change = ide::AnalysisChange::new(); // todo: inotify
+		let mut change = ide::AnalysisChange::new();
 		change.change_file(file_id, Some(std::sync::Arc::new(std::str::from_utf8(&std::fs::read(path)?)?.to_owned())));
 		self.host.apply_change(change);
-		self.host.analysis().highlight(file_id)?
+		//self.host.analysis().highlight(file_id)?
+		trace::timeout_(100, || self.host.analysis().highlight(file_id), path.display().to_string())??
 			.into_iter().map(|ide::HighlightedRange{range, highlight, ..}| rust::HighlightedRange{range: from(&range), highlight}).collect::<Vec<_>>()
 	}
 	#[throws] fn definition(&self, path: &Path, offset: u32) -> Option<rust::NavigationTarget> {
@@ -40,4 +41,7 @@ impl rust::Rust for Analyzer {
 	}
 }
 
-#[throws] fn main() { ipc::spawn::<Box<dyn rust::Rust>>(Box::new(Analyzer::new()?))? }
+#[throws] fn main() {
+	#[cfg(feature="trace")] trace::rstack_self();
+	ipc::spawn::<Box<dyn rust::Rust>>(Box::new(Analyzer::new()?))?
+}
