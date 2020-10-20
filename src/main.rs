@@ -1,7 +1,7 @@
 use {std::path::{Path, PathBuf}, fehler::throws, error::Error,
-				ui::{text::{self, unicode_segmentation::{index, find},Attribute,Style,View,LineColumn,Span,default_font, default_style},
+				ui::{text::{self, unicode_segmentation::{index, find},Attribute,Style,View,Borrowed,LineColumn,Span,default_font},
 				widget::{size, Target, EventContext, ModifiersState, Event, Widget},
-				edit::{Borrowed,Cow,Scroll,Edit,Change}, app::run}};
+				edit::{Cow,Scroll,Edit,Change}, app::run}};
 
 #[throws] fn buffer(path: &Path) -> ui::edit::Owned {
 	let text = String::from_utf8(std::fs::read(path)?)?;
@@ -90,7 +90,7 @@ impl Widget for CodeEditor<'_, '_> {
 		for rust::Diagnostic{range, ..} in diagnostics.iter() { view.paint_span(target, scale, *offset, from(view.text(), *range), ui::color::bgr{b: false, g: false, r: true}); }
 		view.paint_span(target, scale, *offset, *selection, ui::color::bgr{b: true, g: true, r: true});
 		if let Some(message) = message {
-			let mut view = View::new(Borrowed{text: message, style: &default_style});
+			let mut view = View::new(Borrowed::new(message));
 			let size = text::fit(target.size, view.size());
 			Widget::paint(&mut view, &mut target.rows_mut(target.size.y-size.y..target.size.y))?;
 		}
@@ -161,6 +161,6 @@ impl Widget for CodeEditor<'_, '_> {
 		run(CodeEditor{editor: Editor{path, scroll}, diagnostics, message: None, args: args.collect(), history: Vec::new()})?
 	} else {
 		let text = std::fs::read(&path)?;
-		run(Editor{path, scroll: Scroll::new(Edit::new(default_font(), Cow::Borrowed(Borrowed{text: &std::str::from_utf8(&text)?, style: &default_style})))})?
+		run(Editor{path, scroll: Scroll::new(Edit::new(default_font(), Cow::new(&std::str::from_utf8(&text)?)))})?
 	}
 }

@@ -28,7 +28,7 @@ impl rust::Rust for Analyzer {
 		change.change_file(file_id, Some(std::sync::Arc::new(std::str::from_utf8(&std::fs::read(path)?)?.to_owned())));
 		self.host.apply_change(change);
 		//self.host.analysis().highlight(file_id)?
-		trace::timeout_(100, || self.host.analysis().highlight(file_id), path.display().to_string())??
+		trace::timeout_(100, || self.host.analysis().highlight(file_id), format!("Timeout: {}", path.display().to_string()))??
 			.into_iter().map(|ide::HighlightedRange{range, highlight, ..}| rust::HighlightedRange{range: from(&range), highlight}).collect::<Vec<_>>()
 	}
 	#[throws] fn definition(&self, path: &Path, offset: u32) -> Option<rust::NavigationTarget> {
