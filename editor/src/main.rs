@@ -1,3 +1,4 @@
+#![feature(or_patterns)]
 use {std::path::{Path, PathBuf}, fehler::throws, error::Error,
 				ui::{text::{self, unicode_segmentation::{index, find},Attribute,Style,View,Borrowed,LineColumn,Span,default_font},
 				widget::{size, Target, EventContext, ModifiersState, Event, Widget},
@@ -5,28 +6,28 @@ use {std::path::{Path, PathBuf}, fehler::throws, error::Error,
 
 #[throws] fn buffer(path: &Path) -> ui::edit::Owned {
 	let text = String::from_utf8(std::fs::read(path)?)?;
-	use {rust::{HighlightedRange, HighlightTag, HighlightModifier}, ui::text::FontStyle, ui::color::bgr};
+	use {rust::HighlightedRange, ui::text::FontStyle, ui::color::bgr};
 	pub fn style<'t>(text: &'t str, highlight: impl Iterator<Item=HighlightedRange>+'t) -> impl Iterator<Item=Attribute<Style>> + 't {
 		highlight.map(move |HighlightedRange{range, highlight, ..}| {
 			Attribute{
 				range: find(text, range.start as usize).unwrap()..find(text, range.end as usize).unwrap(),
 				attribute: Style{
-					color: {use HighlightTag::*; match highlight.tag {
-						Module => bgr{b: 0., r: 1., g: 1./3.},
-						Keyword if !highlight.modifiers.iter().any(|it| it == HighlightModifier::ControlFlow) => bgr{b: 2./3.,r: 2./3.,g: 2./3.},
-						Function|Macro => bgr{b: 2./3., r: 1., g: 2./3.},
-						Struct|TypeAlias|BuiltinType|TypeParam|Enum => bgr{b: 2./3., r: 0., g: 2./3.},
-						Field => bgr{b: 0., r: 0.,g: 2./3.},
-						Trait => bgr{b: 1., r: 1./2., g: 1.},
-						StringLiteral|NumericLiteral|EnumVariant => bgr{b: 0., r: 1., g: 1./3.},
-						Lifetime|Attribute => bgr{b: 1., r: 1./3., g: 1./3.},
+					color: {use rust::{HighlightTag::*, SymbolKind::{*, LifetimeParam as Lifetime}}; match highlight.tag {
+						Symbol(Module) => bgr{b: 0., r: 1., g: 1./3.},
+						Keyword if !highlight.mods.iter().any(|it| it == rust::HighlightModifier::ControlFlow) => bgr{b: 2./3.,r: 2./3.,g: 2./3.},
+						Symbol(Function|Macro) => bgr{b: 2./3., r: 1., g: 2./3.},
+						Symbol(Struct|TypeAlias|TypeParam|Enum)|BuiltinType => bgr{b: 2./3., r: 0., g: 2./3.},
+						Symbol(Field) => bgr{b: 0., r: 0.,g: 2./3.},
+						Symbol(Trait) => bgr{b: 1., r: 1./2., g: 1.},
+						StringLiteral|NumericLiteral|Symbol(Variant) => bgr{b: 0., r: 1., g: 1./3.},
+						Symbol(Lifetime)|Attribute => bgr{b: 1., r: 1./3., g: 1./3.},
 						Comment => bgr{b: 1./2., r: 1./2., g: 1./2.},
 						_ => bgr{b: 1., r: 1., g: 1.},
 					}},
 					style:
-						if highlight.modifiers.iter().any(|it| it == HighlightModifier::ControlFlow) { FontStyle::Bold }
+						if highlight.mods.iter().any(|it| it == rust::HighlightModifier::ControlFlow) { FontStyle::Bold }
 						else {
-							{use HighlightTag::*; match highlight.tag {
+							{use rust::HighlightTag::*; match highlight.tag {
 									Keyword => FontStyle::Bold, // fixme: Italic
 									_ => FontStyle::Normal
 							}}
@@ -130,7 +131,7 @@ impl Widget for CodeEditor<'_, '_> {
 					},
 					Event::Key{key:'⎙'} => {
 						if let Some(rust::Diagnostic{range, ..}) = diagnostics.first() { *selection = from(text, *range); }
-						else if let Some(cargo::Diagnostic{message, spans, ..}, ..) = cargo::build(args)? {
+						else if let Err(cargo::Diagnostic{message, spans, ..}, ..) = cargo::build(args)? {
 							let cargo::Span{file_name, line_start, column_start, line_end, column_end, ..} = spans.into_iter().next().unwrap();
 							self.view(file_name.into())?;
 							self.message = Some(message);

@@ -1,6 +1,7 @@
 #![feature(default_free_fn)]
 use std::{default::default, path::{Path, PathBuf}};
 use {fehler::throws, anyhow::Error};
+use rust::ide;
 
 fn from(range: &text_size::TextRange) -> rust::TextRange { rust::TextRange{start: range.start().into(), end: range.end().into()} } // serde
 
@@ -24,12 +25,12 @@ impl Analyzer {
 impl rust::Rust for Analyzer {
 	#[throws] fn highlight(&mut self, path: &Path) -> Vec<rust::HighlightedRange> {
 		let file_id = self.file_id(path)?;
-		let mut change = ide::AnalysisChange::new();
+		let mut change = ide::Change::new();
 		change.change_file(file_id, Some(std::sync::Arc::new(std::str::from_utf8(&std::fs::read(path)?)?.to_owned())));
 		self.host.apply_change(change);
-		//self.host.analysis().highlight(file_id)?
-		trace::timeout_(100, || self.host.analysis().highlight(file_id), format!("Timeout: {}", path.display().to_string()))??
-			.into_iter().map(|ide::HighlightedRange{range, highlight, ..}| rust::HighlightedRange{range: from(&range), highlight}).collect::<Vec<_>>()
+		self.host.analysis().highlight(file_id)?
+		//trace::timeout_(100, || self.host.analysis().highlight(file_id), format!("Timeout: {}", path.display().to_string()))??
+			.into_iter().map(|ide::HlRange{range, highlight, ..}| rust::HighlightedRange{range: from(&range), highlight}).collect::<Vec<_>>()
 	}
 	#[throws] fn definition(&self, path: &Path, offset: u32) -> Option<rust::NavigationTarget> {
 		self.host.analysis().goto_definition(ide::FilePosition{file_id: self.file_id(path)?, offset: offset.into()})?

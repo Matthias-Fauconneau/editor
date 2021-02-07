@@ -1,17 +1,23 @@
 [package]
-name = 'rust'
-version = '0.0.0'
-authors = ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
-edition = '2018'
-repository = 'https://github.com/Matthias-Fauconneau/editor'
-description = 'Rust analyzer semantic highlighting'
-[lib]
-path = 'lib.rs'
-[dependencies]
-serde = {version='',optional=true} #ln syntax_highlighting/tags
-fehler = ''
-anyhow = ''
-ipc = {path='../ipc'}
-ide = {features=['serde'],path='../../rust-analyzer/crates/ide',optional=true}#serde tags git='https://github.com/rust-analyzer/rust-analyzer.git'
+name= 'rust'
+description= 'Rust analyzer semantic highlighting'
+repository= 'https://github.com/Matthias-Fauconneau/editor'
+version= '0.0.0'
+authors= ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
+edition= '2018'
+
 [features]
-default = ['serde'] #ln syntax_highlighting/tags
+ide= ['dep:ide','ide_db']
+default= ['ide']
+
+[dependencies]
+serde= ''
+fehler= ''
+anyhow= ''
+ipc= {path='../ipc'}
+ide= {optional=true, features=['serde'], git='https://github.com/Matthias-Fauconneau/rust-analyzer.git'}
+	ide_db = {optional=true, git= 'https://github.com/Matthias-Fauconneau/rust-analyzer.git'}
+
+[lib]
+path= 'lib.rs'
+
