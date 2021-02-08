@@ -1,12 +1,10 @@
 [package]
-name = 'ipc'
-version = '0.0.0'
-authors = ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
-edition = '2018'
-repository = 'https://github.com/Matthias-Fauconneau/editor'
+name= 'ipc'
 description = 'Unix IPC'
-[lib]
-path = 'lib.rs'
+repository= 'https://github.com/Matthias-Fauconneau/editor'
+version= '0.0.0'
+authors= ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
+edition= '2018'
 
 [dependencies]
 anyhow = ''
@@ -15,4 +13,7 @@ serde = {version='',features=["derive"]}
 bincode = ''
 sc = ''
 inotify = ''
-#fork = ''
+fork = ''
+
+[lib]
+path = 'lib.rs'

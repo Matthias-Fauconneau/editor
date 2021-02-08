@@ -7,7 +7,6 @@ pub use bincode::serialize;
 pub trait Server {
 	const ID: &'static str;
 	type Item : Serialize+DeserializeOwned;
-	//#[throws] fn new() -> Self where Self: Sized;
 	#[throws] fn reply(&mut self, item: Self::Item) -> Vec<u8>;
 }
 
@@ -18,7 +17,9 @@ use std::os::unix::net::UnixStream;
 		if path.exists() { std::fs::remove_file(&path)?; }
 		let mut inotify = inotify::Inotify::init()?;
     inotify.add_watch(path.parent().unwrap(), inotify::WatchMask::CREATE)?;
-    std::process::Command::new("server").spawn()?;
+    if let Ok(fork::Fork::Child) = fork::daemon(true, true) {
+			std::process::Command::new("server").spawn().unwrap();
+		}
 		/*let server = S::new().unwrap(); // slow link
 		if let Ok(fork::Fork::Child) = fork::daemon(true, true) {
 			std::panic::set_hook(Box::new(|info| { // Block unwind

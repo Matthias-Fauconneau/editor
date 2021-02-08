@@ -10,10 +10,11 @@ paths= {path= 'rust-analyzer/crates/paths'}
 vfs= {path= 'rust-analyzer/crates/vfs'}
 rust-analyzer= {path= 'rust-analyzer/crates/rust-analyzer'}
 
-[profile.dev]
-opt-level = 3
-[profile.dev.package.unicode-segmentation]
-opt-level = 3
+#[profile.dev.package.core]
+#opt-level = 3
+#[profile.dev.package.std]
+#opt-level = 3
+
 [profile.dev.package.rust]
 opt-level = 3
 [profile.dev.package.ipc]
@@ -24,7 +25,10 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.serde]
 opt-level = 3
-#[profile.dev.package.std]
-#opt-level = 3
-#[profile.dev.package.core]
-#opt-level = 3
+
+[profile.dev.package.unicode-segmentation]
+opt-level = 3
+[profile.dev.package.ttf-parser]
+opt-level = 3
+[profile.dev.package.image]
+opt-level = 3
