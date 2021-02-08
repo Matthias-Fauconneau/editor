@@ -1,13 +1,17 @@
 [package]
-name = 'editor'
-version = '0.0.0'
-authors = ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
-edition = '2018'
+name= 'editor'
+version= '0.0.0'
+authors= ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
+edition= '2018'
 
 [dependencies]
-derive_more = ''
-fehler = ''
-error = {version='', package='anyhow'}
-ui = {path='../ui', features = ['color','text','edit','app']}
-rust = {path='../rust'}
-cargo = {path='../cargo'}
+derive_more= ''
+fehler= ''
+error= {package='anyhow', version= ''}
+ui= {path= '../ui', features= ['color','text','edit','app']}
+rust= {path= '../rust'}
+cargo= {path= '../cargo'}
+
+[[bin]]
+name= 'editor'
+path= 'main.rs'

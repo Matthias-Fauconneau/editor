@@ -105,7 +105,7 @@ impl Widget for CodeEditor<'_, '_> {
 			}
 			Change::None => {
 				let EventContext{modifiers_state: ModifiersState{alt,..}, ..} = event_context;
-				let Self{editor: Editor{path, scroll: Scroll{edit: Edit{view, selection, ..}, ..}}, diagnostics, args, history, ..} = self;
+				let Self{editor: Editor{path, scroll: Scroll{edit: Edit{view, selection, ..}, ..}}, diagnostics, ref args, history, ..} = self;
 				let text = view.text();
 				match event {
 					Event::Key{key:'←'} if *alt => {
@@ -140,7 +140,7 @@ impl Widget for CodeEditor<'_, '_> {
 							scroll.keep_selection_in_view(size);
 						} else {
 							self.message = None;
-							std::process::Command::new("cargo").arg("run").spawn()?; // todo: stdout → message
+							std::process::Command::new("cargo").args(args).arg("run").spawn()?; // todo: stdout → message
 						}
 						true
 					},
@@ -156,7 +156,7 @@ impl Widget for CodeEditor<'_, '_> {
 	let path : std::path::PathBuf = args.next().map(|a| a.into()).unwrap_or(std::env::current_dir()?);
 	if let Some(project) = path.canonicalize()?.ancestors().find(|p| p.join("Cargo.toml").is_file()) {
 		std::env::set_current_dir(project)?;
-		let path = if path.is_file() { path } else { "src/main.rs".into() };
+		let path = if path.is_file() { path } else if Path::new("main.rs").exists() { "main.rs".into() } else { "src/main.rs".into() }; // FIXME: parse Cargo.toml
 		let scroll = Scroll::new(Edit::new(default_font(), Cow::Owned(buffer(&path)?)));
 		let diagnostics = rust::diagnostics(&path)?;
 		run(CodeEditor{editor: Editor{path, scroll}, diagnostics, message: None, args: args.collect(), history: Vec::new()})?

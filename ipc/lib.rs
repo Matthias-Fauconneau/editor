@@ -19,8 +19,8 @@ use std::os::unix::net::UnixStream;
 		let mut inotify = inotify::Inotify::init()?;
     inotify.add_watch(path.parent().unwrap(), inotify::WatchMask::CREATE)?;
     std::process::Command::new("server").spawn()?;
-		/*let server = S::new().unwrap();
-		if let Ok(fork::Fork::Child) = fork::daemon(true, true) { // slow link
+		/*let server = S::new().unwrap(); // slow link
+		if let Ok(fork::Fork::Child) = fork::daemon(true, true) {
 			std::panic::set_hook(Box::new(|info| { // Block unwind
 			 let msg = match info.payload().downcast_ref::<&'static str>() {
 						Some(s) => *s,
