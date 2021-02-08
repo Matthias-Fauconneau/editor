@@ -1,9 +1,7 @@
 use std::path::{Path, PathBuf};
 use serde::{Serialize, Deserialize};
 #[derive(Clone,Copy,Serialize,Deserialize,Debug)] pub struct TextRange { pub start: u32, pub end: u32 }
-#[cfg(feature="ide")] pub extern crate ide;
-#[cfg(not(feature="ide"))] pub mod ide; // syntax_highlighting/tags
-pub use {ide::{HlTag as HighlightTag, HlMod as HighlightModifier, Highlight}, ide_db::SymbolKind};
+pub use types::{SymbolKind, HlTag as HighlightTag, HlMod as HighlightModifier, Highlight};
 
 #[derive(Serialize,Deserialize)] pub struct HighlightedRange {
   pub range: TextRange,
@@ -56,7 +54,7 @@ impl ipc::Request for Diagnostics {
 	Diagnostics(Diagnostics),
 }
 
-use {fehler::throws, anyhow::Error};
+use {fehler::throws, error::Error};
 
 impl ipc::Server for Box<dyn Rust> {
 	const ID : &'static str = "rust";

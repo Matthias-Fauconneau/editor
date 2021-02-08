@@ -6,17 +6,12 @@ version= '0.0.0'
 authors= ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
 edition= '2018'
 
-[features]
-ide= ['dep:ide','ide_db']
-default= ['ide']
-
 [dependencies]
 serde= ''
 fehler= ''
-anyhow= ''
+error= {package= 'anyhow', version=''}
+types= {features=['serde'], git='https://github.com/Matthias-Fauconneau/rust-analyzer.git'}
 ipc= {path='../ipc'}
-ide= {optional=true, features=['serde'], git='https://github.com/Matthias-Fauconneau/rust-analyzer.git'}
-	ide_db = {optional=true, git= 'https://github.com/Matthias-Fauconneau/rust-analyzer.git'}
 
 [lib]
 path= 'lib.rs'

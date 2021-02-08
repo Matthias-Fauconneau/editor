@@ -2,10 +2,10 @@
 members= ["cargo","editor","ipc","rust","server"]
 
 [patch.'https://github.com/Matthias-Fauconneau/rust-analyzer.git']
-ide= {path= 'rust-analyzer/crates/ide'}
-ide_db= {path= 'rust-analyzer/crates/ide_db'}
+types= {path= 'rust-analyzer/crates/types'}
 
 [patch.'https://github.com/rust-analyzer/rust-analyzer.git']
+ide= {path= 'rust-analyzer/crates/ide'}
 paths= {path= 'rust-analyzer/crates/paths'}
 vfs= {path= 'rust-analyzer/crates/vfs'}
 rust-analyzer= {path= 'rust-analyzer/crates/rust-analyzer'}

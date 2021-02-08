@@ -14,8 +14,9 @@ path= 'main.rs'
 anyhow= ''
 fehler= ''
 ipc= {path= '../ipc'}
-rust= {path= '../rust', features=['ide']}
+rust= {path= '../rust'}
 text-size= ''
+ide= {git= 'https://github.com/rust-analyzer/rust-analyzer.git'}
 paths= {git= 'https://github.com/rust-analyzer/rust-analyzer.git'}
 vfs= {git= 'https://github.com/rust-analyzer/rust-analyzer.git'}
 rust-analyzer= {git= 'https://github.com/rust-analyzer/rust-analyzer.git'}

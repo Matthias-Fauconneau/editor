@@ -1,7 +1,6 @@
 #![feature(default_free_fn)]
 use std::{default::default, path::{Path, PathBuf}};
 use {fehler::throws, anyhow::Error};
-use rust::ide;
 
 fn from(range: &text_size::TextRange) -> rust::TextRange { rust::TextRange{start: range.start().into(), end: range.end().into()} } // serde
 

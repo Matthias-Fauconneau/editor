@@ -1,11 +1,11 @@
 #![feature(or_patterns)]
-use {std::path::{Path, PathBuf}, fehler::throws, error::Error,
+use {std::path::{Path, PathBuf}, fehler::throws, error::{Error, Context},
 				ui::{text::{self, unicode_segmentation::{index, find},Attribute,Style,View,Borrowed,LineColumn,Span,default_font},
 				widget::{size, Target, EventContext, ModifiersState, Event, Widget},
 				edit::{Cow,Scroll,Edit,Change}, app::run}};
 
 #[throws] fn buffer(path: &Path) -> ui::edit::Owned {
-	let text = String::from_utf8(std::fs::read(path)?)?;
+	let text = String::from_utf8(std::fs::read(path).context(path.to_str().unwrap().to_owned())?)?;
 	use {rust::HighlightedRange, ui::text::FontStyle, ui::color::bgr};
 	pub fn style<'t>(text: &'t str, highlight: impl Iterator<Item=HighlightedRange>+'t) -> impl Iterator<Item=Attribute<Style>> + 't {
 		highlight.map(move |HighlightedRange{range, highlight, ..}| {
@@ -154,7 +154,7 @@ impl Widget for CodeEditor<'_, '_> {
 #[throws] fn main() {
 	let mut args = std::env::args().skip(1);
 	let path : std::path::PathBuf = args.next().map(|a| a.into()).unwrap_or(std::env::current_dir()?);
-	if let Some(project) = path.ancestors().find(|p| p.join("Cargo.toml").is_file()) {
+	if let Some(project) = path.canonicalize()?.ancestors().find(|p| p.join("Cargo.toml").is_file()) {
 		std::env::set_current_dir(project)?;
 		let path = if path.is_file() { path } else { "src/main.rs".into() };
 		let scroll = Scroll::new(Edit::new(default_font(), Cow::Owned(buffer(&path)?)));
