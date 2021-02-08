@@ -1,5 +1,5 @@
 #![feature(or_patterns)]
-use {std::path::{Path, PathBuf}, fehler::throws, error::{Error, Context},
+use {std::path::{Path, PathBuf}, fehler::throws, error::{Error, Context, anyhow as error},
 				ui::{text::{self, unicode_segmentation::{index, find},Attribute,Style,View,Borrowed,LineColumn,Span,default_font},
 				widget::{size, Target, EventContext, ModifiersState, Event, Widget},
 				edit::{Cow,Scroll,Edit,Change}, app::run}};
@@ -7,10 +7,10 @@ use {std::path::{Path, PathBuf}, fehler::throws, error::{Error, Context},
 #[throws] fn buffer(path: &Path) -> ui::edit::Owned {
 	let text = String::from_utf8(std::fs::read(path).context(path.to_str().unwrap().to_owned())?)?;
 	use {rust::HighlightedRange, ui::text::FontStyle, ui::color::bgr};
-	pub fn style<'t>(text: &'t str, highlight: impl Iterator<Item=HighlightedRange>+'t) -> impl Iterator<Item=Attribute<Style>> + 't {
-		highlight.map(move |HighlightedRange{range, highlight, ..}| {
+	pub fn style<'t>(text: &'t str, highlight: impl Iterator<Item=HighlightedRange>+'t) -> impl Iterator<Item=Result<Attribute<Style>, Error>> + 't {
+		highlight.map(move |HighlightedRange{range, highlight, ..}| Ok(
 			Attribute{
-				range: find(text, range.start as usize).unwrap()..find(text, range.end as usize).unwrap(),
+				range: find(text, range.start as usize).ok_or(error!(""))?..find(text, range.end as usize).ok_or(error!(""))?,
 				attribute: Style{
 					color: {use rust::{HighlightTag::*, SymbolKind::{*, LifetimeParam as Lifetime}}; match highlight.tag {
 						Symbol(Module) => bgr{b: 0., r: 1., g: 1./3.},
@@ -34,9 +34,9 @@ use {std::path::{Path, PathBuf}, fehler::throws, error::{Error, Context},
 						}
 				}
 			}
-		})
+		))
 	}
-	let style = style(&text, rust::highlight(path)?.into_iter()).collect::<Vec::<_>>();
+	let style = style(&text, rust::highlight(path)?.into_iter()).collect::<Result<_, _>>()?;
 	//let style = style(&text, trace::timeout_(100, || rust::highlight(path), path.display().to_string())??.into_iter()).collect::<Vec::<_>>();
 	ui::edit::Owned{text, style}
 }
