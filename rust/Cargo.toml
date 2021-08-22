@@ -5,7 +5,7 @@ lib={path= 'lib.rs'}
 [dependencies]
 serde= '*'
 fehler= '*'
-error= {package= 'anyhow', version='*'}
+error= {git='https://github.com/Matthias-Fauconneau/error'}
 types= {features=['serde'], git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
 ipc= {path='../ipc'}
 

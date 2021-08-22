@@ -2,14 +2,16 @@ cargo-features=['edition2021']
 package= {name= 'editor', version= '0.0.0', edition= '2021'}
 bin= [{name= 'editor', path= 'editor.rs'}]
 workspace= {members= ['cargo','ipc','rust','server']}
+#features={default= ['trace']}
 
 [dependencies]
 derive_more= '*'
 fehler= '*'
-error= {package='anyhow', version= '*'}
+error= {git= 'https://github.com/Matthias-Fauconneau/error'}
 ui= {path= '../ui', features= ['color','text','app']}
 rust= {path= 'rust'}
 cargo= {path= 'cargo'}
+trace= {git= 'https://github.com/Matthias-Fauconneau/trace', optional= true}
 
 [patch.'https://github.com/Matthias-Fauconneau/rust-analyzer']
 types= {path= 'rust-analyzer/crates/types'}
@@ -31,3 +33,11 @@ opt-level = 3
 
 [profile.dev.package.unicode-segmentation]
 opt-level = 3
+[profile.dev.package.ttf-parser]
+opt-level = 3
+[profile.dev.package.image]
+opt-level = 3
+[profile.dev.package.ui]
+opt-level = 3
+[profile.dev.package.editor]
+opt-level = 0
