@@ -12,7 +12,7 @@ pub trait Server {
 
 use std::os::unix::net::UnixStream;
 #[throws] fn connect<S:Server>() -> UnixStream {
-	let path = std::path::Path::new("/run/user").join(unsafe{sc::syscall!(GETUID)}.to_string()).join(S::ID);
+	let path = std::path::Path::new("/run/user").join(rsix::process::getuid().to_string()).join(S::ID);
 	UnixStream::connect(&path).or_else(|_| {
 		if path.exists() { std::fs::remove_file(&path)?; }
 		let mut inotify = inotify::Inotify::init()?;
@@ -63,7 +63,7 @@ pub trait Request {
 }
 
 #[throws] pub fn spawn<S:Server>(mut server: S) {
-	let path = std::path::Path::new("/run/user").join(unsafe{sc::syscall!(GETUID)}.to_string()).join(S::ID);
+	let path = std::path::Path::new("/run/user").join(rsix::process::getuid().to_string()).join(S::ID);
 	for client in std::os::unix::net::UnixListener::bind(&path)?.incoming() {
 		let mut client = client?;
 		let reply = server.reply(bincode::deserialize_from(std::io::Read::by_ref(&mut client))?)?;

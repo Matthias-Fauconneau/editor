@@ -3,9 +3,10 @@ package= {name= 'ipc', version= '0.0.0', edition= '2021', description = 'Unix IP
 lib={path = 'lib.rs'}
 
 [dependencies]
-anyhow = '*'
-fehler = '*'
-serde = {version='*',features=["derive"]}
-bincode = '*'
-inotify = '*'
-fork = '*'
+anyhow= '*'
+fehler= '*'
+serde= {version='*',features=["derive"]}
+bincode= '*'
+rsix= '*'
+inotify= '*'
+fork= '*'
