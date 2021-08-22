@@ -1,4 +1,3 @@
-#![feature(or_patterns)]
 use {std::path::{Path, PathBuf}, fehler::throws, error::{Error, Context, anyhow as error},
 				ui::{text::{self, unicode_segmentation::{index, find},Attribute,Style,View,Borrowed,LineColumn,Span,default_font},
 				widget::{size, Target, EventContext, ModifiersState, Event, Widget},
@@ -57,7 +56,7 @@ impl Editor<'_, '_> {
 }
 impl Widget for Editor<'_, '_> {
 	fn size(&mut self, size: size) -> size { self.scroll.size(size) }
-	#[throws] fn paint(&mut self, target: &mut Target) { self.scroll.paint(target)? }
+	#[throws] fn paint(&mut self, target: &mut Target) { target.fill(0.into()); self.scroll.paint(target)? }
 	#[throws] fn event(&mut self, size: size, event_context: &EventContext, event: &Event) -> bool { if self.event(size, event_context, event) != Change::None { true } else { false }  }
 }
 
@@ -85,6 +84,7 @@ impl CodeEditor<'_, '_> {
 impl Widget for CodeEditor<'_, '_> {
 	fn size(&mut self, size: size) -> size { self.editor.size(size) }
 	#[throws] fn paint(&mut self, target: &mut Target) {
+		target.fill(0.into());
 		let Self{editor: Editor{scroll, ..}, diagnostics, message, ..} = self;
 		let scale = scroll.paint_fit(target);
 		let Scroll{edit: Edit{view, selection, ..}, offset} = scroll;

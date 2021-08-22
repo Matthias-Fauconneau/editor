@@ -10,7 +10,7 @@ edition= '2018'
 serde= ''
 fehler= ''
 error= {package= 'anyhow', version=''}
-types= {features=['serde'], git='https://github.com/Matthias-Fauconneau/rust-analyzer.git'}
+types= {features=['serde'], git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
 ipc= {path='../ipc'}
 
 [lib]

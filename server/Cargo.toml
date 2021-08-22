@@ -16,7 +16,7 @@ fehler= ''
 ipc= {path= '../ipc'}
 rust= {path= '../rust'}
 text-size= ''
-ide= {git= 'https://github.com/rust-analyzer/rust-analyzer.git'}
-paths= {git= 'https://github.com/rust-analyzer/rust-analyzer.git'}
-vfs= {git= 'https://github.com/rust-analyzer/rust-analyzer.git'}
-rust-analyzer= {git= 'https://github.com/rust-analyzer/rust-analyzer.git'}
+ide= {git= 'https://github.com/rust-analyzer/rust-analyzer'}
+paths= {git= 'https://github.com/rust-analyzer/rust-analyzer'}
+vfs= {git= 'https://github.com/rust-analyzer/rust-analyzer'}
+rust-analyzer= {git= 'https://github.com/rust-analyzer/rust-analyzer'}

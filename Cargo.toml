@@ -1,10 +1,10 @@
 [workspace]
 members= ["cargo","editor","ipc","rust","server"]
 
-[patch.'https://github.com/Matthias-Fauconneau/rust-analyzer.git']
+[patch.'https://github.com/Matthias-Fauconneau/rust-analyzer']
 types= {path= 'rust-analyzer/crates/types'}
 
-[patch.'https://github.com/rust-analyzer/rust-analyzer.git']
+[patch.'https://github.com/rust-analyzer/rust-analyzer']
 ide= {path= 'rust-analyzer/crates/ide'}
 paths= {path= 'rust-analyzer/crates/paths'}
 vfs= {path= 'rust-analyzer/crates/vfs'}
@@ -32,3 +32,5 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.image]
 opt-level = 3
+[profile.dev.package.ui]
+opt-level = 2

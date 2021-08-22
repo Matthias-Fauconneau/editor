@@ -8,7 +8,7 @@ edition= '2018'
 derive_more= ''
 fehler= ''
 error= {package='anyhow', version= ''}
-ui= {path= '../ui', features= ['color','text','edit','app']}
+ui= {path= '../ui', features= ['color','text','app']}
 rust= {path= '../rust'}
 cargo= {path= '../cargo'}
 
