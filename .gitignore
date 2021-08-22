@@ -3,6 +3,5 @@ Cargo.lock
 core
 ui
 compose
-cargo
 trace
 rust-analyzer

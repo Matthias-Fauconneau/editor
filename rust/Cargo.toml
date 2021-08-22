@@ -1,18 +1,12 @@
-[package]
-name= 'rust'
-description= 'Rust analyzer semantic highlighting'
-repository= 'https://github.com/Matthias-Fauconneau/editor'
-version= '0.0.0'
-authors= ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
-edition= '2018'
+cargo-features=['edition2021']
+package= {name= 'rust', version= '0.0.0', edition= '2021', description= 'Rust analyzer semantic highlighting', repository= 'https://github.com/Matthias-Fauconneau/editor'}
+lib={path= 'lib.rs'}
 
 [dependencies]
-serde= ''
-fehler= ''
-error= {package= 'anyhow', version=''}
+serde= '*'
+fehler= '*'
+error= {package= 'anyhow', version='*'}
 types= {features=['serde'], git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
 ipc= {path='../ipc'}
 
-[lib]
-path= 'lib.rs'
 

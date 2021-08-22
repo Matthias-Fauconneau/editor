@@ -1,19 +1,11 @@
-[package]
-name= 'ipc'
-description = 'Unix IPC'
-repository= 'https://github.com/Matthias-Fauconneau/editor'
-version= '0.0.0'
-authors= ['Matthias Fauconneau <matthias.fauconneau@gmail.com>']
-edition= '2018'
+cargo-features=['edition2021']
+package= {name= 'ipc', version= '0.0.0', edition= '2021', description = 'Unix IPC', repository= 'https://github.com/Matthias-Fauconneau/editor'}
+lib={path = 'lib.rs'}
 
 [dependencies]
-anyhow = ''
-fehler = ''
-serde = {version='',features=["derive"]}
-bincode = ''
-sc = ''
-inotify = ''
-fork = ''
-
-[lib]
-path = 'lib.rs'
+anyhow = '*'
+fehler = '*'
+serde = {version='*',features=["derive"]}
+bincode = '*'
+inotify = '*'
+fork = '*'
