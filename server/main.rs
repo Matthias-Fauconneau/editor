@@ -1,6 +1,5 @@
 #![feature(default_free_fn)]
-use std::{default::default, path::{Path, PathBuf}};
-use {fehler::throws, anyhow::Error};
+use {std::default::default, fehler::throws, anyhow::Error, std::path::{Path, PathBuf}};
 
 fn from(range: &text_size::TextRange) -> rust::TextRange { rust::TextRange{start: range.start().into(), end: range.end().into()} } // serde
 
@@ -11,8 +10,9 @@ struct Analyzer {
 
 impl Analyzer {
 #[throws] fn new() -> Self {
-	let (host, vfs, _proc_macro) = rust_analyzer::cli::load_cargo::load_workspace_at(&std::env::current_dir()?, &default(),
-		&rust_analyzer::cli::load_cargo::LoadCargoConfig{load_out_dirs_from_check: false, with_proc_macro: false, prefill_caches: false}, &|_| {})?;
+	use rust_analyzer::cli::load_cargo::*;
+	let (host, vfs, _proc_macro) = load_workspace_at(&std::env::current_dir()?, &default(),
+		&LoadCargoConfig{load_out_dirs_from_check: false, with_proc_macro: false, prefill_caches: false}, &|_| {})?;
 	Analyzer{host, vfs}
 }
 #[throws] fn file_id(&self, path: &Path) -> vfs::FileId {
