@@ -10,7 +10,11 @@ struct Analyzer {
 }
 
 impl Analyzer {
-#[throws] fn new() -> Self { let (host, vfs) = rust_analyzer::cli::load_cargo(&std::env::current_dir()?, false, false)?; Analyzer{host, vfs} }
+#[throws] fn new() -> Self {
+	let (host, vfs, _proc_macro) = rust_analyzer::cli::load_cargo::load_workspace_at(&std::env::current_dir()?, &default(),
+		&rust_analyzer::cli::load_cargo::LoadCargoConfig{load_out_dirs_from_check: false, with_proc_macro: false, prefill_caches: false}, &|_| {})?;
+	Analyzer{host, vfs}
+}
 #[throws] fn file_id(&self, path: &Path) -> vfs::FileId {
 	let current_path = std::env::current_dir().unwrap().join(path);
 	let path = if path.is_relative() { current_path.as_path() } else { path };
@@ -18,7 +22,7 @@ impl Analyzer {
 	let (file_id, _) = self.vfs.iter().find(|&(_, p)| p.as_path().unwrap() == <&paths::AbsPath>::try_from(path).unwrap()).ok_or(Error::msg(path.to_str().unwrap().to_owned()))?;
 	file_id
 }
-#[throws] fn path(&self, id: &vfs::FileId) -> PathBuf { Path::new(self.vfs.file_path(*id).as_path().unwrap().to_str().unwrap()).to_owned() }
+#[throws] fn path(&self, id: &vfs::FileId) -> PathBuf { Path::new(self.vfs.file_path(*id).as_path().unwrap().as_ref().to_str().unwrap()).to_owned() }
 }
 
 impl rust::Rust for Analyzer {
@@ -36,7 +40,7 @@ impl rust::Rust for Analyzer {
 		.map(|v| v.info.first().map(|ide::NavigationTarget{file_id, full_range, ..}| rust::NavigationTarget{path: self.path(file_id).unwrap(), range: from(full_range)})).flatten()
 	}
 	#[throws] fn diagnostics(&self, path: &Path) -> Vec<rust::Diagnostic> {
-		self.host.analysis().diagnostics(&default(), self.file_id(path)?)?
+		self.host.analysis().diagnostics(&default(), ide::AssistResolveStrategy::None, self.file_id(path)?)?
 			.into_iter().map(|ide::Diagnostic{message, range, ..}| rust::Diagnostic{message, range: from(&range)}).collect::<Vec<_>>()
 	}
 }
