@@ -1,7 +1,7 @@
 cargo-features=['edition2021']
 package= {name= 'editor', version= '0.0.0', edition= '2021'}
 bin= [{name= 'editor', path= 'editor.rs'}]
-workspace= {members= ['cargo','ipc','rust','server']}
+workspace= {members= ['ipc','rust','server']}
 #features={default= ['trace']}
 
 [dependencies]

@@ -1,12 +1,12 @@
 #![feature(default_free_fn)]
-use {std::default::default, fehler::throws, anyhow::Error, std::path::{Path, PathBuf}};
+use {std::default::default, fehler::throws, error::{Error, error, Ok}, std::path::{Path, PathBuf}};
 
 // Direct Serde on the foreign types would avoid boilerplate
-trait From<T> { fn from(T) -> Self; }
-trait Into<T:From<Self>> { fn into(self) -> T { T::from(self) } }
-impl From<&text_size::TextRange> for rust::TextRange { fn from(range: &text_size::TextRange) -> Self { Self{start: range.start().into(), end: range.end().into()} } }
-impl From<TextEdit> for rust::TextEdit { fn from(text_edit: &text_edit::TextEdit) -> Self { text_edit.iter().map(|text_edit::Indel{insert,delete} (insert, delete.into())).collect() } }
-impl From<rust::FilePosition> for ide::FilePosition { fn from(rust::FilePosition{file_id, offset}: rust::FilePosition) -> Self { Self{file_id: vfs::FileId(file_id), offset: offset.into()} } }
+trait Convert<T> { fn cvt(self) -> T; }
+//impl<S: Convert<T>, T> Convert<Option<T>> for Option<S> { fn cvt(self) -> Option<T> { self.map(|t| t.cvt()) } }
+impl Convert<rust::TextRange> for text_size::TextRange { fn cvt(self) -> rust::TextRange { rust::TextRange{start: self.start().into(), end: self.end().into()} } }
+impl Convert<rust::TextEdit> for ide::TextEdit { fn cvt(self) -> rust::TextEdit { self.into_iter().map(|ide::Indel{insert,delete}| (insert, delete.cvt())).collect() } }
+impl Convert<ide::FilePosition> for rust::FilePosition { fn cvt(self) -> ide::FilePosition { ide::FilePosition{file_id: vfs::FileId(self.file_id), offset: self.offset.try_into().unwrap()} } }
 
 struct Analyzer {
 		host: ide::AnalysisHost,
@@ -20,36 +20,36 @@ impl Analyzer {
 		&LoadCargoConfig{load_out_dirs_from_check: false, with_proc_macro: true, prefill_caches: false}, &|_| {})?;
 	Analyzer{host, vfs}
 }
-#[throws] fn file_id(&self, path: &Path) -> vfs::FileId {
-	let current_path = std::env::current_dir().unwrap().join(path);
+#[throws] fn file_id(&self, path: &Path) -> Option<vfs::FileId> {
+	let current_path = std::env::current_dir()?.join(path);
 	let path = if path.is_relative() { current_path.as_path() } else { path };
 	use std::convert::TryFrom;
-	self.vfs.file_id(paths::AbsPath::try_from(path).unwrap().into())
+	self.vfs.file_id(&paths::AbsPathBuf::try_from(PathBuf::from(path)).map_err(|path| error!(path.display().to_string()))?.into())
 }
-#[throws] fn path(&self, id: &vfs::FileId) -> PathBuf { Path::new(self.vfs.file_path(*id).as_path().unwrap().as_ref().to_str().unwrap()).to_owned() }
+#[throws] fn path(&self, id: &vfs::FileId) -> PathBuf { Path::new(self.vfs.file_path(*id).as_path().ok()?.as_ref().to_str().ok()?).to_owned() }
 }
 
 impl rust::Rust for Analyzer {
-	#[throws] fn file_id(&mut self, path: Path) -> rust::FileId { self.file_id(path)?.0 }
+	#[throws] fn get_file_id(&self, path: &Path) -> Option<rust::FileId> { self.file_id(path)?.map(|file_id| file_id.0) }
 	#[throws] fn highlight(&mut self, file_id: rust::FileId) -> Vec<rust::HighlightedRange> {
 		let file_id = vfs::FileId(file_id);
 		let mut change = ide::Change::new();
-		change.change_file(file_id, Some(std::sync::Arc::new(std::str::from_utf8(&std::fs::read(path)?)?.to_owned())));
+		change.change_file(file_id, Some(std::sync::Arc::new(std::str::from_utf8(&self.vfs.file_contents(file_id))?.to_owned())));
 		self.host.apply_change(change);
 		self.host.analysis().highlight(file_id)?
 		//trace::timeout_(100, || self.host.analysis().highlight(file_id), format!("Timeout: {}", path.display().to_string()))??
-			.into_iter().map(|ide::HlRange{range, highlight, ..}| rust::HighlightedRange{range: from(&range), highlight}).collect::<Vec<_>>()
+			.into_iter().map(|ide::HlRange{range, highlight, ..}| rust::HighlightedRange{range: range.cvt(), highlight}).collect::<Vec<_>>()
 	}
 	#[throws] fn definition(&self, position: rust::FilePosition) -> Option<rust::NavigationTarget> {
-		self.host.analysis().goto_definition(position.into())?
-		.map(|v| v.info.first().map(|ide::NavigationTarget{file_id, full_range, ..}| rust::NavigationTarget{path: self.path(file_id).unwrap(), range: from(full_range)})).flatten()
+		self.host.analysis().goto_definition(position.cvt())?
+		.map(|v| v.info.first().map(|ide::NavigationTarget{file_id, full_range, ..}| rust::NavigationTarget{path: self.path(file_id).unwrap(), range: full_range.cvt()})).flatten()
 	}
 	#[throws] fn diagnostics(&self, file_id: rust::FileId) -> Vec<rust::Diagnostic> {
 		self.host.analysis().diagnostics(&default(), ide::AssistResolveStrategy::None, vfs::FileId(file_id))?
-			.into_iter().map(|ide::Diagnostic{message, range, ..}| rust::Diagnostic{message, range: from(&range)}).collect::<Vec<_>>()
+			.into_iter().map(|ide::Diagnostic{message, range, ..}| rust::Diagnostic{message, range: range.cvt()}).collect::<Vec<_>>()
 	}
-	#[throws] fn on_typed_char(&self, position: rust::FilePosition, typed_char: char) -> Option<TextEdit> {
-		if char=='\n' { self.host.analysis().on_enter(position.into())?.into() }
+	#[throws] fn on_char_typed(&self, position: rust::FilePosition, char_typed: char) -> Option<rust::TextEdit> {
+		if char_typed=='\n' { self.host.analysis().on_enter(position.cvt())?.map(|edit| edit.cvt()) }
 		else { panic!() }
 	}
 }

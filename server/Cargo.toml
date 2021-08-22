@@ -3,8 +3,8 @@ package= {name= 'server', version= '0.0.0', edition= '2021', description= 'Rust 
 bin= [{name= 'server', path= 'main.rs'}]
 
 [dependencies]
-anyhow= '*'
 fehler= '*'
+error= {git= 'https://github.com/Matthias-Fauconneau/error'}
 ipc= {path= '../ipc'}
 rust= {path= '../rust'}
 text-size= '*'

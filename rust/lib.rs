@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 pub use types::{SymbolKind, HlTag as HighlightTag, HlMod as HighlightModifier, Highlight};
 
 pub type FileId = u32;
-#[derive(Serialize,Deserialize)] pub struct FilePosition { file_id: FileId, offset: u32 }
+#[derive(Serialize,Deserialize)] pub struct FilePosition { pub file_id: FileId, pub offset: u32 }
 pub type TextEdit = Vec<(String, TextRange)>;
 
 #[derive(Serialize,Deserialize)] pub struct HighlightedRange {
@@ -26,7 +26,7 @@ pub type TextEdit = Vec<(String, TextRange)>;
 }
 
 pub trait Rust {
-	#[throws] fn file_id(&self, path: &Path) -> Option<FileId>;
+	#[throws] fn get_file_id(&self, path: &Path) -> Option<FileId>;
 	#[throws] fn highlight(&mut self, file_id: FileId) -> Vec<HighlightedRange>;
 	#[throws] fn diagnostics(&self, file_id: FileId) -> Vec<Diagnostic>;
 	#[throws] fn definition(&self, position: FilePosition) -> Option<NavigationTarget>;
@@ -37,7 +37,7 @@ pub trait Rust {
 impl ipc::Request for GetFileId {
 	type Server = Box<dyn Rust>;
 	type Reply = Option<FileId>;
-	#[throws] fn reply(self, server: &mut Self::Server) -> Self::Reply { server.file_id(&self.path)? }
+	#[throws] fn reply(self, server: &mut Self::Server) -> Self::Reply { server.get_file_id(&self.path)? }
 }
 
 #[derive(Serialize,Deserialize)] pub struct HighlightFile { file_id: FileId }
