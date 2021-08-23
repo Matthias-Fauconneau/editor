@@ -7,7 +7,7 @@ pub use bincode::serialize;
 pub trait Server {
 	const ID: &'static str;
 	type Item : Serialize+DeserializeOwned;
-	#[throws] fn reply(&mut self, item: Self::Item) -> Vec<u8>;
+	#[throws] fn reply(&mut self, item: Self::Item) -> Box<[u8]>;
 }
 
 use std::os::unix::net::UnixStream;

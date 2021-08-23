@@ -1,26 +1,31 @@
 cargo-features=['edition2021']
-package= {name= 'editor', version= '0.0.0', edition= '2021'}
-bin= [{name= 'editor', path= 'editor.rs'}]
-workspace= {members= ['ipc','rust','server']}
-#features={default= ['trace']}
+package={name='editor', version='0.0.0', edition='2021'}
+bin=[{name='editor', path='editor.rs'}]
+workspace={members=['ipc','rust','server']}
 
 [dependencies]
-derive_more= '*'
-fehler= '*'
-error= {git= 'https://github.com/Matthias-Fauconneau/error'}
-ui= {path= '../ui', features= ['color','text','app']}
-rust= {path= 'rust'}
-cargo= {path= 'cargo'}
-trace= {git= 'https://github.com/Matthias-Fauconneau/trace', optional= true}
+derive_more='*'
+fehler='*'
+error={git='https://github.com/Matthias-Fauconneau/error'}
+ui={git='https://github.com/Matthias-Fauconneau/ui', features= ['color','text','app']}
+rust={path='rust'}
+cargo={path='cargo'}
+trace={git='https://github.com/Matthias-Fauconneau/trace', optional=true}
+
+[patch.'https://github.com/Matthias-Fauconneau/ui']
+ui={path='ui'}
 
 [patch.'https://github.com/Matthias-Fauconneau/rust-analyzer']
-types= {path= 'rust-analyzer/crates/types'}
+text_edit={path='rust-analyzer/crates/text_edit'}
+vfs={path= 'rust-analyzer/crates/vfs'}
+base_db={path= 'rust-analyzer/crates/base_db'}
+types={path='rust-analyzer/crates/types'}
 
 [patch.'https://github.com/rust-analyzer/rust-analyzer']
-ide= {path= 'rust-analyzer/crates/ide'}
-paths= {path= 'rust-analyzer/crates/paths'}
-vfs= {path= 'rust-analyzer/crates/vfs'}
-rust-analyzer= {path= 'rust-analyzer/crates/rust-analyzer'}
+ide={path= 'rust-analyzer/crates/ide'}
+paths={path= 'rust-analyzer/crates/paths'}
+vfs={path= 'rust-analyzer/crates/vfs'}
+rust-analyzer={path= 'rust-analyzer/crates/rust-analyzer'}
 
 [profile.dev.package.rust]
 opt-level = 3
@@ -39,5 +44,3 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.ui]
 opt-level = 3
-[profile.dev.package.editor]
-opt-level = 0

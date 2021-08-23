@@ -5,43 +5,39 @@ use {fehler::throws, error::{Error, Context, Ok}, std::path::{Path, PathBuf},
 
 #[throws] fn buffer(path: &Path) -> Owned {
 	let text = String::from_utf8(std::fs::read(path).context(path.to_str().unwrap().to_owned())?)?;
-	use rust::{HighlightedRange, HighlightTag, SymbolKind, HighlightModifier};
-	pub fn style<'t>(text: &'t str, highlight: impl Iterator<Item=HighlightedRange>+'t) -> impl Iterator<Item=Result<Attribute<Style>, Error>> + 't {
-		highlight.map(move |HighlightedRange{range, highlight, ..}| Ok(
-			Attribute{
-				range: find(text, range.start as usize).ok()?..find(text, range.end as usize).ok()?,
-				attribute: Style{
-					color: {use {HighlightTag::*, SymbolKind::*}; match highlight.tag {
-						Symbol(Module) => bgr{b: 1./3., r: 1./3., g: 2./3.},
-						Keyword => { if !highlight.mods.iter().any(|it| it == HighlightModifier::ControlFlow) { bgr{b: 2./3.,r: 2./3.,g: 2./3.} } else { bgr{b: 0.,r: 1.,g: 1.} } },
-						Symbol(Function|Macro) => bgr{b: 2./3., r: 1., g: 2./3.},
-						Symbol(Struct|TypeAlias|TypeParam|Enum)|BuiltinType => bgr{b: 2./3., r: 0., g: 2./3.},
-						Symbol(Field) => bgr{b: 0., r: 0.,g: 2./3.},
-						Symbol(Trait) => bgr{b: 1., r: 1./2., g: 1.},
-						StringLiteral|NumericLiteral|Symbol(Variant) => bgr{b: 0., r: 1., g: 1./3.},
-						Symbol(LifetimeParam)|Attribute => bgr{b: 1., r: 1./3., g: 1./3.},
-						Comment => bgr{b: 1./2., r: 1./2., g: 1./2.},
-						_ => bgr{b: 1., r: 1., g: 1.},
-					}},
-					style:
-						if highlight.mods.iter().any(|it| it == HighlightModifier::ControlFlow) { FontStyle::Bold }
-						else {
-							{use HighlightTag::*; match highlight.tag {
-									Keyword => FontStyle::Bold, // fixme: Italic
-									_ => FontStyle::Normal
-							}}
-						}
+	use rust::{HlRange, HlTag, SymbolKind, HlMod};
+	#[throws(as Option)] fn style(text: &str, HlRange{range, highlight, ..}:&HlRange) -> Attribute<Style> { Attribute{
+		range: find(text, range.start())?..find(text, range.end())?,
+		attribute: Style{
+			color: {use {HlTag::*, SymbolKind::*}; match highlight.tag {
+				Symbol(Module) => bgr{b: 1./3., g: 2./3., r: 1./3.},
+				Keyword => { if !highlight.mods.iter().any(|it| it == HlMod::ControlFlow) { bgr{b: 2./3., g: 2./3., r: 2./3.} } else { bgr{b: 0., g: 1., r: 1.} } },
+				Symbol(Function|Macro) => bgr{b: 2./3., g: 2./3., r: 1.},
+				Symbol(Struct|TypeAlias|TypeParam|Enum)|BuiltinType => bgr{b: 2./3., g: 2./3., r: 0.},
+				Symbol(Field) => bgr{b: 0., g: 2./3., r: 0.,},
+				Symbol(Trait) => bgr{b: 1., g: 1., r: 1./2.,},
+				BoolLiteral|ByteLiteral|CharLiteral|StringLiteral|NumericLiteral|Symbol(Variant) => bgr{b: 0., g: 1./3., r: 2./3.},
+				Symbol(LifetimeParam)|Attribute|BuiltinAttr => bgr{b: 1., g: 1./3., r: 1./3.,},
+				Symbol(_)|FormatSpecifier|Operator(_)|UnresolvedReference|None => bgr{b: 1., g: 1., r: 1.,},
+				Punctuation(_)|EscapeSequence => bgr{b: 1./2., g: 1., r: 1./2.},
+				Comment => bgr{b: 1./2., g: 1./2., r: 1./2.,},
+			}},
+			style:
+				if highlight.mods.iter().any(|it| it == HlMod::ControlFlow) { FontStyle::Bold }
+				else {
+					{use HlTag::*; match highlight.tag {
+							Keyword => FontStyle::Bold, // fixme: Italic
+							_ => FontStyle::Normal
+					}}
 				}
-			}
-		))
-	}
-	let style = style(&text, rust::highlight(rust::file_id(path)?)?.into_iter()).collect::<Result<_, _>>()?;
-	//let style = style(&text, trace::timeout_(100, || rust::highlight(path), path.display().to_string())??.into_iter()).collect::<Result::<_,_>>()?;
+		}
+	}}
+	let style = rust::highlight(rust::file_id(path)?)?.into_iter().map(|range| style(&text, range)).collect::<Option<_>>().ok()?;
 	Owned{text, style}
 }
 
-#[track_caller] fn from_index(text: &str, byte_index: usize) -> LineColumn { LineColumn::from_text_index(text, find(text, byte_index).unwrap()).unwrap() }
-fn from(text: &str, range: rust::TextRange) -> Span { Span{start: from_index(text, range.start as usize), end: from_index(text, range.end as usize)} }
+#[track_caller] fn from_index(text: &str, byte_index: rust::TextSize) -> LineColumn { LineColumn::from_text_index(text, find(text, byte_index).unwrap()).unwrap() }
+fn from(text: &str, range: rust::TextRange) -> Span { Span{start: from_index(text, range.start().into()), end: from_index(text, range.end().into())} }
 
 #[derive(derive_more::Deref)] struct Editor<'f, 't>{
 	path: std::path::PathBuf,
@@ -67,7 +63,7 @@ impl Widget for Editor<'_, '_> {
 
 struct CodeEditor<'f, 't>{
 	editor: Editor<'f, 't>,
-	diagnostics: Vec<rust::Diagnostic>,
+	diagnostics: Box<[rust::Diagnostic]>,
 	message: Option<String>,
 	args: Vec<String>,
 	/*selection/browse_*/history: Vec<(PathBuf, Span)>,
@@ -100,7 +96,7 @@ impl Widget for CodeEditor<'_, '_> {
 		if let Some(message) = message {
 			let mut view = View::new(Borrowed::new(message));
 			let size = text::fit(target.size, view.size());
-			dbg!(target.size, view.size(), size);
+			//dbg!(target.size, view.size(), size);
 			Widget::paint(&mut view, &mut target.rows_mut(target.size.y-size.y..target.size.y))?;
 		}
 	}
@@ -126,11 +122,11 @@ impl Widget for CodeEditor<'_, '_> {
 						true
 					},
 					Event::Key{key:'→'} if *alt => {
-						if let Some(target) = rust::definition(rust::FilePosition{file_id: rust::file_id(path)?, offset: index(text, text::index(text, selection.end)) as _})? {
+						if let Some(target) = rust::definition(rust::FilePosition{file_id: rust::file_id(path)?, offset: index(text, text::index(text, selection.end)).try_into().unwrap()})? {
 							history.push((path.clone(), *selection));
-							let rust::NavigationTarget{path, range: rust::TextRange{start,..}, ..} = target;
+							let rust::NavigationTarget{path, range, ..} = target;
 							self.view(path)?;
-							let span = Span::new(from_index(self.editor.view.text(), start as usize));
+							let span = Span::new(from_index(self.editor.view.text(), range.start()));
 							let scroll = &mut self.editor.scroll;
 							scroll.edit.selection = span;
 							scroll.keep_selection_in_view(size);
@@ -171,7 +167,7 @@ impl Widget for CodeEditor<'_, '_> {
 				.unwrap_or_else(|| cargo::parse(&project.join("Cargo.toml")).unwrap().into())
 			};
 		let scroll = Scroll::new(Edit::new(default_font(), Cow::Owned(buffer(&path)?)));
-		let mut code = CodeEditor{editor: Editor{path, scroll}, diagnostics: vec![], message: None, args: args.collect(), history: vec![]};
+		let mut code = CodeEditor{editor: Editor{path, scroll}, diagnostics: Box::new([]), message: None, args: args.collect(), history: vec![]};
 		code.update()?;
 		run(code)?
 	} else {

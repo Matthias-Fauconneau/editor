@@ -7,7 +7,7 @@ fehler= '*'
 error= {git= 'https://github.com/Matthias-Fauconneau/error'}
 ipc= {path= '../ipc'}
 rust= {path= '../rust'}
-text-size= '*'
+text-size= {version='*', features=['serde']}
 ide= {git= 'https://github.com/rust-analyzer/rust-analyzer'}
 vfs= {git= 'https://github.com/rust-analyzer/rust-analyzer'}
 rust-analyzer= {git= 'https://github.com/rust-analyzer/rust-analyzer'}
