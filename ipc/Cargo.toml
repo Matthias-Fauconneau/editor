@@ -1,5 +1,4 @@
-cargo-features=['edition2021']
-package= {name= 'ipc', version= '0.0.0', edition= '2021', description = 'Unix IPC', repository= 'https://github.com/Matthias-Fauconneau/editor'}
+package= {name= 'ipc', version= '0.0.0', edition= '2021', description = 'Unix IPC'}
 lib={path = 'lib.rs'}
 
 [dependencies]
@@ -7,6 +6,6 @@ anyhow= '*'
 fehler= '*'
 serde= {version='*',features=["derive"]}
 bincode= '*'
-rsix= '*'
+rustix= '*'
 inotify= '*'
 fork= '*'

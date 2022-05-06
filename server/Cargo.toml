@@ -1,13 +1,12 @@
-cargo-features=['edition2021']
-package= {name= 'server', version= '0.0.0', edition= '2021', description= 'Rust analyzer semantic highlighting', repository= 'https://github.com/Matthias-Fauconneau/editor'}
+package= {name= 'server', version= '0.0.0', description= 'Rust analyzer semantic highlighting', edition='2021'}
 bin= [{name= 'server', path= 'main.rs'}]
 
 [dependencies]
-fehler= '*'
-error= {git= 'https://github.com/Matthias-Fauconneau/error'}
+fehler='*'
+anyhow='*'
 ipc= {path= '../ipc'}
 rust= {path= '../rust'}
 text-size= {version='*', features=['serde']}
-ide= {git= 'https://github.com/rust-analyzer/rust-analyzer'}
-vfs= {git= 'https://github.com/rust-analyzer/rust-analyzer'}
-rust-analyzer= {git= 'https://github.com/rust-analyzer/rust-analyzer'}
+ide= {git='https://github.com/rust-lang/rust-analyzer'}
+vfs= {git= 'https://github.com/rust-lang/rust-analyzer'}
+rust-analyzer= {git= 'https://github.com/rust-lang/rust-analyzer'}

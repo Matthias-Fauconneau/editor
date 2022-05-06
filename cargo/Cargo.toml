@@ -1,11 +1,9 @@
-cargo-features= ['edition2021']
-package= {name= 'cargo', version= '0.0.0', edition= '2021'}
+package= {name= 'cargo', version= '0.0.0', edition='2021'}
 lib= {name= 'cargo', path= 'lib.rs'}
 bin= [{name= 'diagnostic', path= 'main.rs'}]
 
 [dependencies]
 fehler= '*'
-error= {git= 'https://github.com/Matthias-Fauconneau/error'}
 serde= {version= '*', features= ['derive']}
 toml= '*'
 serde_json= '*'

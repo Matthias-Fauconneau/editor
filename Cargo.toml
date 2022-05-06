@@ -1,4 +1,3 @@
-cargo-features=['edition2021']
 package={name='editor', version='0.0.0', edition='2021'}
 bin=[{name='editor', path='editor.rs'}]
 workspace={members=['ipc','rust','server']}
@@ -6,26 +5,34 @@ workspace={members=['ipc','rust','server']}
 [dependencies]
 derive_more='*'
 fehler='*'
-error={git='https://github.com/Matthias-Fauconneau/error'}
-ui={git='https://github.com/Matthias-Fauconneau/ui', features= ['color','text','app']}
+anyhow='*'
+ui={git='https://github.com/Matthias-Fauconneau/ui', features= ['edit']}
 rust={path='rust'}
 cargo={path='cargo'}
 trace={git='https://github.com/Matthias-Fauconneau/trace', optional=true}
 
+[patch.crates-io]
+ash-window={git='https://github.com/Matthias-Fauconneau/ash'}
+ash={git='https://github.com/Matthias-Fauconneau/ash'}
+
 [patch.'https://github.com/Matthias-Fauconneau/ui']
-ui={path='ui'}
+ui={path='../ui'}
 
-[patch.'https://github.com/Matthias-Fauconneau/rust-analyzer']
-text_edit={path='rust-analyzer/crates/text_edit'}
-vfs={path= 'rust-analyzer/crates/vfs'}
-base_db={path= 'rust-analyzer/crates/base_db'}
-types={path='rust-analyzer/crates/types'}
+[patch.'https://github.com/Matthias-Fauconneau/num']
+num={path='../num'}
+[patch.'https://github.com/Matthias-Fauconneau/vector']
+vector={path='../vector'}
+[patch.'https://github.com/Matthias-Fauconneau/image']
+image={path='../image'}
 
-[patch.'https://github.com/rust-analyzer/rust-analyzer']
-ide={path= 'rust-analyzer/crates/ide'}
-paths={path= 'rust-analyzer/crates/paths'}
-vfs={path= 'rust-analyzer/crates/vfs'}
-rust-analyzer={path= 'rust-analyzer/crates/rust-analyzer'}
+[patch.'https://github.com/rust-lang/rust-analyzer']
+text-edit={path='../rust-analyzer/crates/text-edit'}
+vfs={path='../rust-analyzer/crates/vfs'}
+base-db={path='../rust-analyzer/crates/base-db'}
+types={path='../rust-analyzer/crates/types'}
+ide={path='../rust-analyzer/crates/ide'}
+paths={path='../rust-analyzer/crates/paths'}
+rust-analyzer={path='../rust-analyzer/crates/rust-analyzer'}
 
 [profile.dev.package.rust]
 opt-level = 3
@@ -38,8 +45,8 @@ opt-level = 3
 
 [profile.dev.package.unicode-segmentation]
 opt-level = 3
-[profile.dev.package.ttf-parser]
-opt-level = 3
+#[profile.dev.package.ttf-parser]
+#opt-level = 3
 [profile.dev.package.image]
 opt-level = 3
 [profile.dev.package.ui]

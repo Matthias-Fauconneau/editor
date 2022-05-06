@@ -1,4 +1,4 @@
-use {fehler::throws, anyhow::Error};
+use fehler::throws; type Error = Box<dyn std::error::Error>;
 use std::io::{Read, Write};
 use serde::{Serialize,de::DeserializeOwned};
 use bincode::deserialize;
@@ -7,12 +7,12 @@ pub use bincode::serialize;
 pub trait Server {
 	const ID: &'static str;
 	type Item : Serialize+DeserializeOwned;
-	#[throws] fn reply(&mut self, item: Self::Item) -> Box<[u8]>;
+	fn reply(&mut self, item: Self::Item) -> Box<[u8]>;
 }
 
 use std::os::unix::net::UnixStream;
 #[throws] fn connect<S:Server>() -> UnixStream {
-	let path = std::path::Path::new("/run/user").join(rsix::process::getuid().to_string()).join(S::ID);
+	let path = std::path::Path::new("/run/user").join(rustix::process::getuid().as_raw().to_string()).join(S::ID);
 	UnixStream::connect(&path).or_else(|_| {
 		if path.exists() { std::fs::remove_file(&path)?; }
 		let mut inotify = inotify::Inotify::init()?;
@@ -59,14 +59,14 @@ pub trait Request {
 	server.write(&serialize(&request)?)?;
 	let mut reply = Vec::new();
 	let size = server.read_to_end(&mut reply)?;
-	deserialize::<Result<R::Reply,String>>(&reply[0..size])?.map_err(|e| Error::msg(e))?
+	deserialize::<Result<R::Reply,String>>(&reply[0..size])?.map_err(|e| anyhow::Error::msg(e))?
 }
 
 #[throws] pub fn spawn<S:Server>(mut server: S) {
-	let path = std::path::Path::new("/run/user").join(rsix::process::getuid().to_string()).join(S::ID);
+	let path = std::path::Path::new("/run/user").join(rustix::process::getuid().as_raw().to_string()).join(S::ID);
 	for client in std::os::unix::net::UnixListener::bind(&path)?.incoming() {
 		let mut client = client?;
-		let reply = server.reply(bincode::deserialize_from(std::io::Read::by_ref(&mut client))?)?;
+		let reply = server.reply(bincode::deserialize_from(std::io::Read::by_ref(&mut client))?);
 		client.write_all(&reply)?;
 	}
 }

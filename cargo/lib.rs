@@ -1,14 +1,14 @@
 #![feature(associated_type_bounds)]
 
-use {error::{Result, Ok}, std::path::Path};
+use std::path::Path;
 use serde::{Serialize, Deserialize};
 #[derive(Serialize, Deserialize)]
 struct Target { name: String, path: String }
 #[derive(Deserialize, Serialize)]
 pub struct Manifest { bin: Vec<Target> }
-pub fn parse(file: &Path) -> Result<String> {
+pub fn parse(file: &Path) -> Result<String, Box<dyn std::error::Error>> {
 	let mut manifest: Manifest = toml::from_str(std::str::from_utf8(&std::fs::read(file)?)?)?;
-	Ok({let first = manifest.bin.drain(..).next(); first}.ok()?.path)
+	Ok({let first = manifest.bin.drain(..).next(); first}.unwrap().path)
 }
 
 pub use cargo_metadata::diagnostic::{Diagnostic, DiagnosticSpan as Span};

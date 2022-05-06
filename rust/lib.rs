@@ -23,7 +23,7 @@ use serde::{Serialize, Deserialize};
 	// severity, fix
 }
 
-use {fehler::throws, error::{Error, Result, Ok}};
+type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 pub trait Rust {
 	fn get_file_id(&self, path: &Path) -> Result<Option<FileId>>;
@@ -32,7 +32,6 @@ pub trait Rust {
 	fn definition(&self, position: FilePosition) -> Result<Option<NavigationTarget>>;
 	fn on_char_typed(&self, position: FilePosition, char_typed: char) -> Result<Option<TextEdit>>;
 }
-
 
 use ipc::Request;
 
@@ -83,8 +82,8 @@ impl Request for OnCharTyped {
 impl ipc::Server for Box<dyn Rust> {
 	const ID : &'static str = "rust";
 	type Item = Item;
-	fn reply(&mut self, item: Item) -> Result<Box<[u8]>> {
-		#[throws] fn serialize<T:Serialize>(r : Result<T>) -> Box<[u8]> { ipc::serialize(&r.map_err(|e| e.to_string()))?.into_boxed_slice() }
+	fn reply(&mut self, item: Item) -> Box<[u8]> {
+		fn serialize<T:Serialize>(r : Result<T>) -> Box<[u8]> { ipc::serialize(&r.map_err(|e| e.to_string())).unwrap().into_boxed_slice() }
 		use Item::*;
 		match item {
 			GetFileId(r) => serialize(r.reply(self)),
@@ -97,7 +96,7 @@ impl ipc::Server for Box<dyn Rust> {
 }
 
 use ipc::request;
-pub fn file_id(path: &Path) -> Result<FileId> { request::<GetFileId>(Item::GetFileId(GetFileId{path: abs(path)}))?.ok() }
+pub fn file_id(path: &Path) -> Result<Option<FileId>> { request::<GetFileId>(Item::GetFileId(GetFileId{path: abs(path)})) }
 pub fn highlight(file_id: FileId) -> Result<Box<[HlRange]>> { request::<HighlightFile>(Item::HighlightFile(HighlightFile{file_id})) }
 pub fn diagnostics(file_id: FileId) -> Result<Box<[Diagnostic]>> { request::<Diagnostics>(Item::Diagnostics(Diagnostics{file_id})) }
 pub fn definition(position: FilePosition) -> Result<Option<NavigationTarget>> { request::<Definition>(Item::Definition(Definition{position})) }

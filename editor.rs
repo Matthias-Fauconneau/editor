@@ -1,13 +1,13 @@
-use {fehler::throws, error::{Error, Context, Ok}, std::path::{Path, PathBuf},
-				ui::{text::{self, unicode_segmentation::{index, find},Attribute,Style,bgr,FontStyle,View,Borrowed,LineColumn,Span,default_font},
-				widget::{size, Target, EventContext, ModifiersState, Event, Widget},
-				edit::{Owned,Cow,Scroll,Edit,Change}, app::run}};
+use {fehler::throws, anyhow::Context, std::path::{Path, PathBuf},
+		ui::{Error, text::{self, unicode_segmentation::{index, find},Attribute,Style,bgr,FontStyle,View,Borrowed,LineColumn,Span,default_font},
+		widget::{size, int2, xy, RenderContext, EventContext, ModifiersState, Event, Widget},
+		edit::{Owned,Cow,Scroll,Edit,Change}, run}};
 
 #[throws] fn buffer(path: &Path) -> Owned {
 	let text = String::from_utf8(std::fs::read(path).context(path.to_str().unwrap().to_owned())?)?;
 	use rust::{HlRange, HlTag, SymbolKind, HlMod};
-	#[throws(as Option)] fn style(text: &str, HlRange{range, highlight, ..}:&HlRange) -> Attribute<Style> { Attribute{
-		range: find(text, range.start())?..find(text, range.end())?,
+	fn style(text: &str, HlRange{range, highlight, ..}:&HlRange) -> Attribute<Style> { Attribute{
+		range: find(text, range.start()) .. find(text, range.end()),
 		attribute: Style{
 			color: {use {HlTag::*, SymbolKind::*}; match highlight.tag {
 				Symbol(Module) => bgr{b: 1./3., g: 2./3., r: 1./3.},
@@ -17,7 +17,7 @@ use {fehler::throws, error::{Error, Context, Ok}, std::path::{Path, PathBuf},
 				Symbol(Field) => bgr{b: 0., g: 2./3., r: 0.,},
 				Symbol(Trait) => bgr{b: 1., g: 1., r: 1./2.,},
 				BoolLiteral|ByteLiteral|CharLiteral|StringLiteral|NumericLiteral|Symbol(Variant) => bgr{b: 0., g: 1./3., r: 2./3.},
-				Symbol(LifetimeParam)|Attribute|BuiltinAttr => bgr{b: 1., g: 1./3., r: 1./3.,},
+				Symbol(LifetimeParam)|AttributeBracket|Symbol(Attribute)|Symbol(BuiltinAttr) => bgr{b: 1., g: 1./3., r: 1./3.,},
 				Symbol(_)|FormatSpecifier|Operator(_)|UnresolvedReference|None => bgr{b: 1., g: 1., r: 1.,},
 				Punctuation(_)|EscapeSequence => bgr{b: 1./2., g: 1., r: 1./2.},
 				Comment => bgr{b: 1./2., g: 1./2., r: 1./2.,},
@@ -32,11 +32,11 @@ use {fehler::throws, error::{Error, Context, Ok}, std::path::{Path, PathBuf},
 				}
 		}
 	}}
-	let style = rust::highlight(rust::file_id(path)?)?.into_iter().map(|range| style(&text, range)).collect::<Option<_>>().ok()?;
+	let style = rust::highlight(rust::file_id(path)?.unwrap())?.into_iter().map(|range| style(&text, range)).collect();
 	Owned{text, style}
 }
 
-#[track_caller] fn from_index(text: &str, byte_index: rust::TextSize) -> LineColumn { LineColumn::from_text_index(text, find(text, byte_index).unwrap()).unwrap() }
+#[track_caller] fn from_index(text: &str, byte_index: rust::TextSize) -> LineColumn { LineColumn::from_text_index(text, find(text, byte_index)).unwrap() }
 fn from(text: &str, range: rust::TextRange) -> Span { Span{start: from_index(text, range.start().into()), end: from_index(text, range.end().into())} }
 
 #[derive(derive_more::Deref)] struct Editor<'f, 't>{
@@ -44,7 +44,7 @@ fn from(text: &str, range: rust::TextRange) -> Span { Span{start: from_index(tex
 	#[deref] scroll: Scroll<'f,'t>
 }
 impl Editor<'_, '_> {
-	fn event(&mut self, size: size, event_context: &EventContext, event: &Event) -> Change {
+	fn event(&mut self, size: size, event_context: &mut EventContext, event: &Event) -> Change {
 		let change = self.scroll.event(size, event_context, event);
 		if let Change::Insert|Change::Remove|Change::Other = change {
 				let Self{path, scroll: Scroll{edit: Edit{view, ..}, ..}} = self;
@@ -55,8 +55,8 @@ impl Editor<'_, '_> {
 }
 impl Widget for Editor<'_, '_> {
 	fn size(&mut self, size: size) -> size { self.scroll.size(size) }
-	#[throws] fn paint(&mut self, target: &mut Target) { target.fill(0.into()); self.scroll.paint(target)? }
-	#[throws] fn event(&mut self, size: size, event_context: &EventContext, event: &Event) -> bool {
+	#[throws] fn paint(&mut self, cx: &mut RenderContext, size: size, offset: int2) { /*cx.fill(0.into());*/ self.scroll.paint(cx, size, offset)? }
+	#[throws] fn event(&mut self, size: size, event_context: &mut EventContext, event: &Event) -> bool {
 		if self.event(size, event_context, event) != Change::None { true } else { false }
 	}
 }
@@ -73,7 +73,7 @@ impl CodeEditor<'_, '_> {
 		let Self{editor: Editor{path, scroll: Scroll{edit: Edit{view, ..}, ..}}, diagnostics, message, ..} = self;
 		view.size = None;
 		view.data = Cow::Owned(self::buffer(path)?);
-		*diagnostics = rust::diagnostics(rust::file_id(path)?)?;
+		*diagnostics = rust::diagnostics(rust::file_id(path)?.unwrap())?;
 		*message = diagnostics.first().map(|rust::Diagnostic{message, ..}| message.clone());
 	}
 	#[throws] fn view(&mut self, path: PathBuf) {
@@ -84,23 +84,22 @@ impl CodeEditor<'_, '_> {
 
 impl Widget for CodeEditor<'_, '_> {
 	fn size(&mut self, size: size) -> size { self.editor.size(size) }
-	#[throws] fn paint(&mut self, target: &mut Target) {
-		target.fill(0.into());
+	#[throws] fn paint(&mut self, cx: &mut RenderContext, size: size, offset: int2) {
+		//target.fill(0.into());
 		let Self{editor: Editor{scroll, ..}, diagnostics, message, ..} = self;
-		let scale = scroll.paint_fit(target);
+		let scale = scroll.paint_fit(cx, size, offset);
 		let Scroll{edit: Edit{view, selection, ..}, offset} = scroll;
 		for rust::Diagnostic{range, ..} in diagnostics.iter() {
-			view.paint_span(target, scale, *offset, from(view.text(), *range), ui::color::bgr{b: false, g: false, r: true});
+			view.paint_span(cx, scale, offset.signed(), from(view.text(), *range), ui::color::bgr{b: false, g: false, r: true});
 		}
-		view.paint_span(target, scale, *offset, *selection, ui::color::bgr{b: true, g: true, r: true});
-		if let Some(message) = message {
-			let mut view = View::new(Borrowed::new(message));
-			let size = text::fit(target.size, view.size());
-			//dbg!(target.size, view.size(), size);
-			Widget::paint(&mut view, &mut target.rows_mut(target.size.y-size.y..target.size.y))?;
+		view.paint_span(cx, scale, offset.signed(), *selection, ui::color::bgr{b: true, g: true, r: true});
+		if let Some(text) = message {
+			let mut view = View::new(Borrowed{text,style:&[]});
+			let text_size = text::fit(size, view.size());
+			Widget::paint(&mut view, cx, xy{x: size.x, y: text_size.y}, xy{x: 0, y: (size.y-text_size.y) as i32})?;
 		}
 	}
-	#[throws] fn event(&mut self, size: size, event_context: &EventContext, event: &Event) -> bool {
+	#[throws] fn event(&mut self, size: size, event_context: &mut EventContext, event: &Event) -> bool {
 		match self.editor.event(size, event_context, event) {
 			Change::Cursor|Change::Scroll => true,
 			Change::Insert|Change::Remove|Change::Other => {
@@ -112,7 +111,7 @@ impl Widget for CodeEditor<'_, '_> {
 				let Self{editor: Editor{path, scroll: Scroll{edit: Edit{view, selection, ..}, ..}}, diagnostics, ref args, history, ..} = self;
 				let text = view.text();
 				match event {
-					Event::Key{key:'←'} if *alt => {
+					Event::Key('←') if *alt => {
 						if let Some((path, span)) = history.pop() {
 							self.view(path)?;
 							let scroll = &mut self.editor.scroll;
@@ -121,8 +120,8 @@ impl Widget for CodeEditor<'_, '_> {
 						}
 						true
 					},
-					Event::Key{key:'→'} if *alt => {
-						if let Some(target) = rust::definition(rust::FilePosition{file_id: rust::file_id(path)?, offset: index(text, text::index(text, selection.end)).try_into().unwrap()})? {
+					Event::Key('→') if *alt => {
+						if let Some(target) = rust::definition(rust::FilePosition{file_id: rust::file_id(path)?.unwrap(), offset: index(text, text::index(text, selection.end)).try_into().unwrap()})? {
 							history.push((path.clone(), *selection));
 							let rust::NavigationTarget{path, range, ..} = target;
 							self.view(path)?;
@@ -133,7 +132,7 @@ impl Widget for CodeEditor<'_, '_> {
 						}
 						true
 					},
-					Event::Key{key:'⎙'} => {
+					Event::Key('⎙') => {
 						if let Some(rust::Diagnostic{range, ..}) = diagnostics.first() { *selection = from(text, *range); }
 						else if let Err(cargo::Diagnostic{message, spans, ..}, ..) = cargo::build(args)? {
 							let cargo::Span{file_name, line_start, column_start, line_end, column_end, ..} = spans.into_iter().next().unwrap();
@@ -169,9 +168,10 @@ impl Widget for CodeEditor<'_, '_> {
 		let scroll = Scroll::new(Edit::new(default_font(), Cow::Owned(buffer(&path)?)));
 		let mut code = CodeEditor{editor: Editor{path, scroll}, diagnostics: Box::new([]), message: None, args: args.collect(), history: vec![]};
 		code.update()?;
-		run(code)?
+		run(Box::new(code))?
 	} else {
 		let text = std::fs::read(&path)?;
-		run(Editor{path, scroll: Scroll::new(Edit::new(default_font(), Cow::new(&std::str::from_utf8(&text)?)))})?
+		//run(Box::new(Editor{path, scroll: Scroll::new(Edit::new(default_font(), Cow::Borrowed(Borrowed{text: &std::str::from_utf8(&text)?, style: &[]})))}))?
+		run(Box::new(Editor{path, scroll: Scroll::new(Edit::new(default_font(), Cow::Owned(Owned{text: String::from_utf8(text)?, style: Vec::new()})))}))?
 	}
 }
