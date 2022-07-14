@@ -15,24 +15,31 @@ trace={git='https://github.com/Matthias-Fauconneau/trace', optional=true}
 ash-window={git='https://github.com/Matthias-Fauconneau/ash'}
 ash={git='https://github.com/Matthias-Fauconneau/ash'}
 
-[patch.'https://github.com/Matthias-Fauconneau/ui']
-ui={path='../ui'}
+#[patch.'https://github.com/Matthias-Fauconneau/ui']
+#ui={path='../ui'}
 
-[patch.'https://github.com/Matthias-Fauconneau/num']
-num={path='../num'}
-[patch.'https://github.com/Matthias-Fauconneau/vector']
-vector={path='../vector'}
-[patch.'https://github.com/Matthias-Fauconneau/image']
-image={path='../image'}
+#[patch.'https://github.com/Matthias-Fauconneau/num']
+#num={path='../num'}
+#[patch.'https://github.com/Matthias-Fauconneau/vector']
+#vector={path='../vector'}
+#[patch.'https://github.com/Matthias-Fauconneau/image']
+#image={path='../image'}
 
 [patch.'https://github.com/rust-lang/rust-analyzer']
-text-edit={path='../rust-analyzer/crates/text-edit'}
-vfs={path='../rust-analyzer/crates/vfs'}
-base-db={path='../rust-analyzer/crates/base-db'}
-types={path='../rust-analyzer/crates/types'}
-ide={path='../rust-analyzer/crates/ide'}
-paths={path='../rust-analyzer/crates/paths'}
-rust-analyzer={path='../rust-analyzer/crates/rust-analyzer'}
+text-edit={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
+vfs={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
+base-db={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
+types={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
+ide={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
+paths={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
+rust-analyzer={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
+#text-edit={path='../rust-analyzer/crates/text-edit'}
+#vfs={path='../rust-analyzer/crates/vfs'}
+#base-db={path='../rust-analyzer/crates/base-db'}
+#types={path='../rust-analyzer/crates/types'}
+#ide={path='../rust-analyzer/crates/ide'}
+#paths={path='../rust-analyzer/crates/paths'}
+#rust-analyzer={path='../rust-analyzer/crates/rust-analyzer'}
 
 [profile.dev.package.rust]
 opt-level = 3

@@ -2,8 +2,8 @@ package= {name= 'ipc', version= '0.0.0', edition= '2021', description = 'Unix IP
 lib={path = 'lib.rs'}
 
 [dependencies]
-anyhow= '*'
 fehler= '*'
+anyhow= '*'
 serde= {version='*',features=["derive"]}
 bincode= '*'
 rustix= '*'
