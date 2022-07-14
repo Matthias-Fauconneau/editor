@@ -1,4 +1,4 @@
-use {fehler::throws}; type Error = Box<dyn std::error::Error>; use anyhow::Context;
+use fehler::throws; type Error = Box<dyn std::error::Error>; use anyhow::Context;
 use std::io::{Read, Write};
 use serde::{Serialize,de::DeserializeOwned};
 use bincode::deserialize;
