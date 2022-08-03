@@ -1,6 +1,6 @@
 use {fehler::throws, anyhow::Context, std::path::{Path, PathBuf},
 		ui::{Error, text::{self, unicode_segmentation::{index, find},Attribute,Style,bgr,FontStyle,View,Borrowed,LineColumn,Span,default_font},
-		widget::{size, int2, xy, RenderContext, EventContext, ModifiersState, Event, Widget},
+		widget::{size, int2, xy, Target, EventContext, ModifiersState, Event, Widget},
 		edit::{Owned,Cow,Scroll,Edit,Change}, run}};
 
 #[throws] fn buffer(path: &Path) -> Owned {
@@ -55,7 +55,7 @@ impl Editor<'_, '_> {
 }
 impl Widget for Editor<'_, '_> {
 	fn size(&mut self, size: size) -> size { self.scroll.size(size) }
-	#[throws] fn paint(&mut self, cx: &mut RenderContext, size: size, offset: int2) { /*cx.fill(0.into());*/ self.scroll.paint(cx, size, offset)? }
+	#[throws] fn paint(&mut self, target: &mut Target, size: size, offset: int2) { /*target.fill(0.into());*/ self.scroll.paint(target, size, offset)? }
 	#[throws] fn event(&mut self, size: size, event_context: &mut EventContext, event: &Event) -> bool {
 		if self.event(size, event_context, event) != Change::None { true } else { false }
 	}
@@ -84,19 +84,19 @@ impl CodeEditor<'_, '_> {
 
 impl Widget for CodeEditor<'_, '_> {
 	fn size(&mut self, size: size) -> size { self.editor.size(size) }
-	#[throws] fn paint(&mut self, cx: &mut RenderContext, size: size, offset: int2) {
+	#[throws] fn paint(&mut self, target: &mut Target, size: size, offset: int2) {
 		//target.fill(0.into());
 		let Self{editor: Editor{scroll, ..}, diagnostics, message, ..} = self;
-		let scale = scroll.paint_fit(cx, size, offset);
+		let scale = scroll.paint_fit(target, size, offset);
 		let Scroll{edit: Edit{view, selection, ..}, offset} = scroll;
 		for rust::Diagnostic{range, ..} in diagnostics.iter() {
-			view.paint_span(cx, scale, offset.signed(), from(view.text(), *range), ui::color::bgr{b: false, g: false, r: true});
+			view.paint_span(target, scale, offset.signed(), from(view.text(), *range), ui::color::bgr{b: false, g: false, r: true});
 		}
-		view.paint_span(cx, scale, offset.signed(), *selection, ui::color::bgr{b: true, g: true, r: true});
+		view.paint_span(target, scale, offset.signed(), *selection, ui::color::bgr{b: true, g: true, r: true});
 		if let Some(text) = message {
 			let mut view = View::new(Borrowed{text,style:&[]});
 			let text_size = text::fit(size, view.size());
-			Widget::paint(&mut view, cx, xy{x: size.x, y: text_size.y}, xy{x: 0, y: (size.y-text_size.y) as i32})?;
+			Widget::paint(&mut view, target, xy{x: size.x, y: text_size.y}, xy{x: 0, y: (size.y-text_size.y) as i32})?;
 		}
 	}
 	#[throws] fn event(&mut self, size: size, event_context: &mut EventContext, event: &Event) -> bool {
@@ -168,10 +168,10 @@ impl Widget for CodeEditor<'_, '_> {
 		let scroll = Scroll::new(Edit::new(default_font(), Cow::Owned(buffer(&path)?)));
 		let mut code = CodeEditor{editor: Editor{path, scroll}, diagnostics: Box::new([]), message: None, args: args.collect(), history: vec![]};
 		code.update()?;
-		run(Box::new(code))?
+		run(&mut code)?
 	} else {
 		let text = std::fs::read(&path)?;
-		//run(Box::new(Editor{path, scroll: Scroll::new(Edit::new(default_font(), Cow::Borrowed(Borrowed{text: &std::str::from_utf8(&text)?, style: &[]})))}))?
-		run(Box::new(Editor{path, scroll: Scroll::new(Edit::new(default_font(), Cow::Owned(Owned{text: String::from_utf8(text)?, style: Vec::new()})))}))?
+		run(&mut Editor{path, scroll: Scroll::new(Edit::new(default_font(), Cow::Borrowed(Borrowed{text: &std::str::from_utf8(&text)?, style: &[]})))})?
+		//run(&mut Editor{path, scroll: Scroll::new(Edit::new(default_font(), Cow::Owned(Owned{text: String::from_utf8(text)?, style: Vec::new()})))})?
 	}
 }
