@@ -171,7 +171,6 @@ impl Widget for CodeEditor<'_, '_> {
 		run(&mut code)?
 	} else {
 		let text = std::fs::read(&path)?;
-		run(&mut Editor{path, scroll: Scroll::new(Edit::new(default_font(), Cow::Borrowed(Borrowed{text: &std::str::from_utf8(&text)?, style: &[]})))})?
-		//run(&mut Editor{path, scroll: Scroll::new(Edit::new(default_font(), Cow::Owned(Owned{text: String::from_utf8(text)?, style: Vec::new()})))})?
+		run(&mut Editor{path, scroll: Scroll::new(Edit::new(default_font(), Cow::Owned(Owned{text: String::from_utf8(text)?, style: Vec::new()})))})?
 	}
 }
