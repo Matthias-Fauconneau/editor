@@ -35,7 +35,7 @@ impl rust::Rust for Analyzer {
 		.map(|v| v.info.first().map(|ide::NavigationTarget{file_id, full_range, ..}| rust::NavigationTarget{path: self.path(file_id).unwrap(), range: *full_range})).flatten()
 	}
 	#[throws] fn diagnostics(&self, file_id: rust::FileId) -> Box<[rust::Diagnostic]> {
-		self.host.analysis().diagnostics(&Default::default(), ide::AssistResolveStrategy::None, file_id)?
+		self.host.analysis().diagnostics(&ide::DiagnosticsConfig{proc_macros_enabled:true, proc_attr_macros_enabled:true, ..Default::default()}, ide::AssistResolveStrategy::None, file_id)?
 			.into_iter().map(|ide::Diagnostic{message, range, ..}| rust::Diagnostic{message, range}).collect()
 	}
 	#[throws] fn on_char_typed(&self, position: rust::FilePosition, char_typed: char) -> Option<rust::TextEdit> {
