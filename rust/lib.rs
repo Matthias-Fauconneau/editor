@@ -27,10 +27,12 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 pub trait Rust {
 	fn get_file_id(&self, path: &Path) -> Result<Option<FileId>>;
-	fn highlight(&mut self, file_id: FileId) -> Result<Box<[HlRange]>>;
+	fn highlight(&self, file_id: FileId) -> Result<Box<[HlRange]>>;
 	fn diagnostics(&self, file_id: FileId) -> Result<Box<[Diagnostic]>>;
 	fn definition(&self, position: FilePosition) -> Result<Option<NavigationTarget>>;
 	fn on_char_typed(&self, position: FilePosition, char_typed: char) -> Result<Option<TextEdit>>;
+
+	fn change(&mut self, file_id: FileId) -> Result<()>;
 }
 
 use ipc::Request;
@@ -70,13 +72,20 @@ impl Request for OnCharTyped {
 	fn reply(self, server: &mut Self::Server) -> Result<Self::Reply> { server.on_char_typed(self.position, self.char_typed) }
 }
 
+#[derive(Serialize,Deserialize)] pub struct Change { file_id: FileId }
+impl Request for Change {
+	type Server = Box<dyn Rust>;
+	type Reply = ();
+	fn reply(self, server: &mut Self::Server) -> Result<Self::Reply> { server.change(self.file_id) }
+}
 
 #[derive(Serialize,Deserialize)] pub enum Item {
 	GetFileId(GetFileId),
 	HighlightFile(HighlightFile),
 	Diagnostics(Diagnostics),
 	Definition(Definition),
-	OnCharTyped(OnCharTyped)
+	OnCharTyped(OnCharTyped),
+	Change(Change)
 }
 
 impl ipc::Server for Box<dyn Rust> {
@@ -91,6 +100,7 @@ impl ipc::Server for Box<dyn Rust> {
 			Diagnostics(r) => serialize(r.reply(self)),
 			Definition(r) => serialize(r.reply(self)),
 			OnCharTyped(r) => serialize(r.reply(self)),
+			Change(r) => serialize(r.reply(self)),
 		}
 	}
 }
@@ -101,3 +111,4 @@ pub fn highlight(file_id: FileId) -> Result<Box<[HlRange]>> { request::<Highligh
 pub fn diagnostics(file_id: FileId) -> Result<Box<[Diagnostic]>> { request::<Diagnostics>(Item::Diagnostics(Diagnostics{file_id})) }
 pub fn definition(position: FilePosition) -> Result<Option<NavigationTarget>> { request::<Definition>(Item::Definition(Definition{position})) }
 pub fn on_char_typed(position: FilePosition, char_typed: char) -> Result<Option<TextEdit>> { request::<OnCharTyped>(Item::OnCharTyped(OnCharTyped{position, char_typed})) }
+pub fn change(file_id: FileId) -> Result<()> { request::<Change>(Item::Change(Change{file_id})) }

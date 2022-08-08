@@ -17,9 +17,9 @@ use std::os::unix::net::UnixStream;
 		if path.exists() { std::fs::remove_file(&path)?; }
 		let mut inotify = inotify::Inotify::init()?;
 		inotify.add_watch(path.parent().unwrap(), inotify::WatchMask::CREATE)?;
-		//if let Ok(fork::Fork::Child) = fork::daemon(true, true) {
+		if let Ok(fork::Fork::Child) = fork::daemon(true, true) {
 			std::process::Command::new("server").spawn().unwrap();
-		//}
+		}
 		/*let server = S::new().unwrap(); // slow link
 		if let Ok(fork::Fork::Child) = fork::daemon(true, true) {
 			std::panic::set_hook(Box::new(|info| { // Block unwind

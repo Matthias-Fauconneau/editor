@@ -6,8 +6,8 @@ use {fehler::throws, /*anyhow::Context,*/ std::path::{Path, PathBuf},
 #[throws] fn buffer(path: &Path) -> Owned {
 	let text = String::from_utf8(std::fs::read(path)/*.context(path.to_str().unwrap().to_owned())*/?)?;
 	use rust::{HlRange, HlTag, SymbolKind, HlMod};
-	fn style(text: &str, HlRange{range, highlight, ..}:&HlRange) -> Attribute<Style> { Attribute{
-		range: find(text, range.start()) .. find(text, range.end()),
+	fn style(_text: &str, HlRange{range, highlight, ..}:&HlRange) -> Attribute<Style> { Attribute{
+		range: u32::from(range.start()) as usize .. u32::from(range.end()) as usize,//: find(text, range.start()) .. find(text, range.end()),
 		attribute: Style{
 			color: {use {HlTag::*, SymbolKind::*}; match highlight.tag {
 				Symbol(Module) => bgr{b: 1./3., g: 2./3., r: 1./3.},
@@ -32,7 +32,9 @@ use {fehler::throws, /*anyhow::Context,*/ std::path::{Path, PathBuf},
 				}
 		}
 	}}
+	let time = std::time::Instant::now();
 	let style = rust::highlight(rust::file_id(path)?.unwrap())?.into_iter().map(|range| style(&text, range)).collect();
+	eprintln!("highlight {:?}", (std::time::Instant::now()-time));
 	Owned{text, style}
 }
 
@@ -72,9 +74,12 @@ impl CodeEditor<'_, '_> {
 	#[throws] fn update(&mut self) {
 		let Self{editor: Editor{path, scroll: Scroll{edit: Edit{view, ..}, ..}}, diagnostics, message, ..} = self;
 		view.size = None;
+		let time = std::time::Instant::now();
 		view.data = Cow::Owned(self::buffer(path)?);
+		eprintln!("highlight {:?}", (std::time::Instant::now()-time));
 		*diagnostics = rust::diagnostics(rust::file_id(path)?.unwrap())?;
 		*message = diagnostics.first().map(|rust::Diagnostic{message, ..}| message.clone());
+		eprintln!("done");
 	}
 	#[throws] fn view(&mut self, path: PathBuf) {
 		self.editor.path = path;
@@ -103,6 +108,7 @@ impl Widget for CodeEditor<'_, '_> {
 		match self.editor.event(size, event_context, event) {
 			Change::Cursor|Change::Scroll => true,
 			Change::Insert|Change::Remove|Change::Other => {
+				rust::change(rust::file_id(&self.editor.path)?.unwrap())?;
 				self.update()?;
 				true
 			}
@@ -142,6 +148,7 @@ impl Widget for CodeEditor<'_, '_> {
 							scroll.edit.selection = Span{start:LineColumn{line:line_start-1, column:column_start-1}, end:LineColumn{line:line_end-1, column:column_end-1}};
 							scroll.keep_selection_in_view(size);
 						} else {
+							// TODO: restart (terminate any previous still running instance)
 							self.message = None;
 							std::process::Command::new("cargo").args(args).arg("run").spawn()?; // todo: stdout → message
 						}
@@ -155,6 +162,7 @@ impl Widget for CodeEditor<'_, '_> {
 }
 
 #[throws] fn main() {
+	let time = std::time::Instant::now();
 	#[cfg(feature="trace")] { trace::rstack_self().unwrap(); trace::signal_interrupt()?; }
 	let mut args = std::env::args().skip(1);
 	let path : std::path::PathBuf = args.next().map(|a| a.into()).unwrap_or(std::env::current_dir()?);
@@ -165,9 +173,9 @@ impl Widget for CodeEditor<'_, '_> {
 				["main.rs","src/main.rs"].iter().map(|path| project.join(path)).filter(|path| path.exists()).next()
 				.unwrap_or_else(|| cargo::parse(&project.join("Cargo.toml")).unwrap().into())
 			};
-		let scroll = Scroll::new(Edit::new(default_font(), Cow::Owned(buffer(&path)?)));
-		let mut code = CodeEditor{editor: Editor{path, scroll}, diagnostics: Box::new([]), message: None, args: args.collect(), history: vec![]};
+		let mut code = CodeEditor{editor: Editor{path, scroll: Scroll::new(Edit::new(default_font(), Cow::new("")))}, diagnostics: Box::new([]), message: None, args: args.collect(), history: vec![]};
 		code.update()?;
+		eprintln!("update {:?}", (std::time::Instant::now()-time));
 		run(&mut code)?
 	} else {
 		let text = std::fs::read(&path)?;

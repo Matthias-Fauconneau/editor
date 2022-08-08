@@ -21,13 +21,11 @@ impl Analyzer {
 
 impl rust::Rust for Analyzer {
 	#[throws] fn get_file_id(&self, path: &Path) -> Option<rust::FileId> { self.vfs.file_id(&vfs(path)) }
-	#[throws] fn highlight(&mut self, file_id: rust::FileId) -> Box<[rust::HlRange]> {
-		let mut change = ide::Change::new();
-		self.vfs.set_file_contents(self.vfs.file_path(file_id), Some(std::fs::read(self.vfs.file_path(file_id).as_path().unwrap())?));
-		change.change_file(file_id, Some(std::sync::Arc::new(std::str::from_utf8(&self.vfs.file_contents(file_id))?.to_owned())));
-		self.host.apply_change(change);
-		self.host.analysis().highlight(file_id)?
-			.into_iter().map(|ide::HlRange{range, highlight, ..}| rust::HlRange{range, highlight}).collect()
+	#[throws] fn highlight(&self, file_id: rust::FileId) -> Box<[rust::HlRange]> {
+		let time = std::time::Instant::now();
+		let highlight = self.host.analysis().highlight(file_id)?;
+		eprintln!("highlight {:?}", (std::time::Instant::now()-time));
+		highlight.into_iter().map(|ide::HlRange{range, highlight, ..}| rust::HlRange{range, highlight}).collect()
 	}
 	#[throws] fn definition(&self, position: rust::FilePosition) -> Option<rust::NavigationTarget> {
 		self.host.analysis().goto_definition(position)?
@@ -40,6 +38,12 @@ impl rust::Rust for Analyzer {
 	#[throws] fn on_char_typed(&self, position: rust::FilePosition, char_typed: char) -> Option<rust::TextEdit> {
 		if char_typed=='\n' { self.host.analysis().on_enter(position)? }
 		else { panic!() }
+	}
+
+	#[throws] fn change(&mut self, file_id: rust::FileId) {
+		let mut change = ide::Change::new();
+		self.vfs.set_file_contents(self.vfs.file_path(file_id), Some(std::fs::read(self.vfs.file_path(file_id).as_path().unwrap())?));
+		change.change_file(file_id, Some(std::sync::Arc::new(std::str::from_utf8(&self.vfs.file_contents(file_id))?.to_owned())));
 	}
 }
 
