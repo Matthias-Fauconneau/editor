@@ -10,3 +10,5 @@ text-size= {version='*', features=['serde']}
 ide= {git='https://github.com/rust-lang/rust-analyzer'}
 vfs= {git= 'https://github.com/rust-lang/rust-analyzer'}
 rust-analyzer= {git= 'https://github.com/rust-lang/rust-analyzer'}
+proc-macro-srv= {git= 'https://github.com/rust-lang/rust-analyzer', features=['sysroot-abi']}
+tracing-subscriber= { version='*', default-features = false, features=["env-filter","registry","fmt","tracing-log"] }

@@ -1,10 +1,10 @@
-use {fehler::throws, anyhow::Context, std::path::{Path, PathBuf},
+use {fehler::throws, /*anyhow::Context,*/ std::path::{Path, PathBuf},
 		ui::{Error, text::{self, unicode_segmentation::{index, find},Attribute,Style,bgr,FontStyle,View,Borrowed,LineColumn,Span,default_font},
 		widget::{size, int2, xy, Target, EventContext, ModifiersState, Event, Widget},
 		edit::{Owned,Cow,Scroll,Edit,Change}, run}};
 
 #[throws] fn buffer(path: &Path) -> Owned {
-	let text = String::from_utf8(std::fs::read(path).context(path.to_str().unwrap().to_owned())?)?;
+	let text = String::from_utf8(std::fs::read(path)/*.context(path.to_str().unwrap().to_owned())*/?)?;
 	use rust::{HlRange, HlTag, SymbolKind, HlMod};
 	fn style(text: &str, HlRange{range, highlight, ..}:&HlRange) -> Attribute<Style> { Attribute{
 		range: find(text, range.start()) .. find(text, range.end()),

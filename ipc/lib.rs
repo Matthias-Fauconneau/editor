@@ -1,4 +1,4 @@
-use fehler::throws; type Error = Box<dyn std::error::Error>; use anyhow::Context;
+use fehler::throws; type Error = Box<dyn std::error::Error>; //use anyhow::Context;
 use std::io::{Read, Write};
 use serde::{Serialize,de::DeserializeOwned};
 use bincode::deserialize;
@@ -17,9 +17,9 @@ use std::os::unix::net::UnixStream;
 		if path.exists() { std::fs::remove_file(&path)?; }
 		let mut inotify = inotify::Inotify::init()?;
 		inotify.add_watch(path.parent().unwrap(), inotify::WatchMask::CREATE)?;
-		if let Ok(fork::Fork::Child) = fork::daemon(true, true) {
+		//if let Ok(fork::Fork::Child) = fork::daemon(true, true) {
 			std::process::Command::new("server").spawn().unwrap();
-		}
+		//}
 		/*let server = S::new().unwrap(); // slow link
 		if let Ok(fork::Fork::Child) = fork::daemon(true, true) {
 			std::panic::set_hook(Box::new(|info| { // Block unwind
@@ -64,7 +64,7 @@ pub trait Request {
 
 #[throws] pub fn spawn<S:Server>(mut server: S) {
 	let path = std::path::Path::new("/run/user").join(rustix::process::getuid().as_raw().to_string()).join(S::ID);
-	for client in std::os::unix::net::UnixListener::bind(&path).context(path.display().to_string())?.incoming() {
+	for client in std::os::unix::net::UnixListener::bind(&path)/*.context(path.display().to_string())*/?.incoming() {
 		let mut client = client?;
 		let reply = server.reply(bincode::deserialize_from(std::io::Read::by_ref(&mut client))?);
 		client.write_all(&reply)?;

@@ -5,7 +5,6 @@ workspace={members=['ipc','rust','server']}
 [dependencies]
 derive_more='*'
 fehler='*'
-anyhow='*'
 ui={git='https://github.com/Matthias-Fauconneau/ui', features= ['edit']}
 rust={path='rust'}
 cargo={path='cargo'}
@@ -22,20 +21,23 @@ ui={path='../ui'}
 #image={path='../image'}
 
 [patch.'https://github.com/rust-lang/rust-analyzer']
-text-edit={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
-vfs={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
-base-db={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
-types={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
-ide={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
-paths={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
-rust-analyzer={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
-#text-edit={path='../rust-analyzer/crates/text-edit'}
-#vfs={path='../rust-analyzer/crates/vfs'}
-#base-db={path='../rust-analyzer/crates/base-db'}
-#types={path='../rust-analyzer/crates/types'}
-#ide={path='../rust-analyzer/crates/ide'}
-#paths={path='../rust-analyzer/crates/paths'}
-#rust-analyzer={path='../rust-analyzer/crates/rust-analyzer'}
+#text-edit={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
+#vfs={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
+#base-db={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
+#types={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
+#ide={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
+#paths={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
+#rust-analyzer={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
+#proc-macro-srv={git='https://github.com/Matthias-Fauconneau/rust-analyzer'}
+
+text-edit={path='../rust-analyzer/crates/text-edit'}
+vfs={path='../rust-analyzer/crates/vfs'}
+base-db={path='../rust-analyzer/crates/base-db'}
+types={path='../rust-analyzer/crates/types'}
+ide={path='../rust-analyzer/crates/ide'}
+paths={path='../rust-analyzer/crates/paths'}
+rust-analyzer={path='../rust-analyzer/crates/rust-analyzer'}
+proc-macro-srv={path='../rust-analyzer/crates/proc-macro-srv'}
 
 [profile.dev.package.rust]
 opt-level = 3
