@@ -66,6 +66,7 @@ impl rust::Rust for Analyzer {
 		let mut change = ide::Change::new();
 		self.vfs.set_file_contents(self.vfs.file_path(file_id), Some(std::fs::read(self.vfs.file_path(file_id).as_path().unwrap())?));
 		change.change_file(file_id, Some(std::sync::Arc::new(std::str::from_utf8(&self.vfs.file_contents(file_id))?.to_owned())));
+		self.host.apply_change(change);
 	}
 }
 

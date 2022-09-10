@@ -1,13 +1,13 @@
-use {fehler::throws, /*anyhow::Context,*/ std::path::{Path, PathBuf},
+use {fehler::throws, std::path::{Path, PathBuf},
 		ui::{Error, text::{self, unicode_segmentation::{index, find},Attribute,Style,bgr,FontStyle,View,Borrowed,LineColumn,Span,default_font},
 		widget::{size, int2, xy, Target, EventContext, ModifiersState, Event, Widget},
 		edit::{Owned,Cow,Scroll,Edit,Change}, run}};
 
 #[throws] fn buffer(path: &Path) -> Owned {
-	let text = String::from_utf8(std::fs::read(path)/*.context(path.to_str().unwrap().to_owned())*/?)?;
+	let text = String::from_utf8(std::fs::read(path)?)?;
 	use rust::{HlRange, HlTag, SymbolKind, HlMod};
 	fn style(_text: &str, HlRange{range, highlight, ..}:&HlRange) -> Attribute<Style> { Attribute{
-		range: u32::from(range.start()) as usize .. u32::from(range.end()) as usize,//: find(text, range.start()) .. find(text, range.end()),
+		range: u32::from(range.start()) as usize .. u32::from(range.end()) as usize,
 		attribute: Style{
 			color: {use {HlTag::*, SymbolKind::*}; match highlight.tag {
 				Symbol(Module) => bgr{b: 1./3., g: 2./3., r: 1./3.},
@@ -51,13 +51,14 @@ impl Editor<'_, '_> {
 		if let Change::Insert|Change::Remove|Change::Other = change {
 				let Self{path, scroll: Scroll{edit: Edit{view, ..}, ..}} = self;
 				std::fs::write(&path, view.text().as_bytes()).unwrap();
+				rust::change(rust::file_id(path).unwrap().unwrap()).unwrap();
 		}
 		change
 	}
 }
 impl Widget for Editor<'_, '_> {
 	fn size(&mut self, size: size) -> size { self.scroll.size(size) }
-	#[throws] fn paint(&mut self, target: &mut Target, size: size, offset: int2) { /*target.fill(0.into());*/ self.scroll.paint(target, size, offset)? }
+	#[throws] fn paint(&mut self, target: &mut Target, size: size, offset: int2) { self.scroll.paint(target, size, offset)? }
 	#[throws] fn event(&mut self, size: size, event_context: &mut EventContext, event: &Event) -> bool {
 		if self.event(size, event_context, event) != Change::None { true } else { false }
 	}
