@@ -23,7 +23,16 @@ impl rust::Rust for Analyzer {
 	#[throws] fn get_file_id(&self, path: &Path) -> Option<rust::FileId> { self.vfs.file_id(&vfs(path)) }
 	#[throws] fn highlight(&self, file_id: rust::FileId) -> Box<[rust::HlRange]> {
 		let time = std::time::Instant::now();
-		let highlight = self.host.analysis().highlight(file_id)?;
+		let highlight = self.host.analysis().highlight(ide::HighlightConfig{
+			strings: true,
+			punctuation: true,
+			specialize_punctuation: true,
+			operator: true,
+			specialize_operator: true,
+			inject_doc_comment: true,
+			macro_bang: true,
+			syntactic_name_ref_highlighting: true
+		}, file_id)?;
 		eprintln!("highlight {:?}", (std::time::Instant::now()-time));
 		highlight.into_iter().map(|ide::HlRange{range, highlight, ..}| rust::HlRange{range, highlight}).collect()
 	}
@@ -32,8 +41,21 @@ impl rust::Rust for Analyzer {
 		.map(|v| v.info.first().map(|ide::NavigationTarget{file_id, full_range, ..}| rust::NavigationTarget{path: self.path(file_id).unwrap(), range: *full_range})).flatten()
 	}
 	#[throws] fn diagnostics(&self, file_id: rust::FileId) -> Box<[rust::Diagnostic]> {
-		self.host.analysis().diagnostics(&ide::DiagnosticsConfig{proc_macros_enabled:true, proc_attr_macros_enabled:true, ..Default::default()}, ide::AssistResolveStrategy::None, file_id)?
-			.into_iter().map(|ide::Diagnostic{message, range, ..}| rust::Diagnostic{message, range}).collect()
+		self.host.analysis().diagnostics(&ide::DiagnosticsConfig{
+			proc_macros_enabled: true,
+			proc_attr_macros_enabled: true,
+			disable_experimental: false,
+			disabled: Default::default(),
+			expr_fill_default: Default::default(),
+			insert_use: ide_db::imports::insert_use::InsertUseConfig{
+				granularity: ide_db::imports::insert_use::ImportGranularity::Preserve,
+                enforce_granularity: false,
+                prefix_kind: ide_db::imports::insert_use::PrefixKind::Plain,
+                group: false,
+                skip_glob_imports: false
+			}
+		}, ide::AssistResolveStrategy::None, file_id)?
+		.into_iter().map(|ide::Diagnostic{message, range, ..}| rust::Diagnostic{message, range}).collect()
 	}
 	#[throws] fn on_char_typed(&self, position: rust::FilePosition, char_typed: char) -> Option<rust::TextEdit> {
 		if char_typed=='\n' { self.host.analysis().on_enter(position)? }
@@ -48,17 +70,9 @@ impl rust::Rust for Analyzer {
 }
 
 #[throws] fn main() {
+	if let Some("proc-macro") = std::env::args().skip(1).next().as_deref() { unimplemented!() }
+	#[cfg(feature="trace")] trace::rstack_self();
 	//use tracing_subscriber::{fmt::layer, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
-	if let Some("proc-macro") = std::env::args().skip(1).next().as_deref() {
-		//tracing_subscriber::Registry::default().with(EnvFilter::new("debug")).with(layer().compact().with_writer(std::io::stderr)).init();
-		if let Err(err) = proc_macro_srv::cli::run() {
-			eprintln!("proc-macro: {}", err);
-			std::process::exit(101);
-		}
-		return;
-	} else {
-		#[cfg(feature="trace")] trace::rstack_self();
-		//tracing_subscriber::Registry::default().with(EnvFilter::new("warn")).with(layer().compact().with_writer(std::io::stderr)).init();
-		ipc::spawn::<Box<dyn rust::Rust>>(Box::new(Analyzer::new()?))?
-	}
+	//tracing_subscriber::Registry::default().with(EnvFilter::new("warn")).with(layer().compact().with_writer(std::io::stderr)).init();
+	ipc::spawn::<Box<dyn rust::Rust>>(Box::new(Analyzer::new()?))?
 }
