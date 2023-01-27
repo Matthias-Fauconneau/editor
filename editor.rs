@@ -34,7 +34,7 @@ use {fehler::throws, std::path::{Path, PathBuf},
 	}}
 	let time = std::time::Instant::now();
 	let style = rust::highlight(rust::file_id(path)?.unwrap())?.into_iter().map(|range| style(&text, range)).collect();
-	eprintln!("highlight {:?}", (std::time::Instant::now()-time));
+	//eprintln!("highlight {:?}", (std::time::Instant::now()-time));
 	Owned{text, style}
 }
 
@@ -77,10 +77,10 @@ impl CodeEditor<'_, '_> {
 		view.size = None;
 		let time = std::time::Instant::now();
 		view.data = Cow::Owned(self::buffer(path)?);
-		eprintln!("highlight {:?}", (std::time::Instant::now()-time));
+		//eprintln!("highlight {:?}", (std::time::Instant::now()-time));
 		*diagnostics = rust::diagnostics(rust::file_id(path)?.unwrap())?;
 		*message = diagnostics.first().map(|rust::Diagnostic{message, ..}| message.clone());
-		eprintln!("done");
+		//eprintln!("done");
 	}
 	#[throws] fn view(&mut self, path: PathBuf) {
 		self.editor.path = path;
@@ -176,7 +176,7 @@ impl Widget for CodeEditor<'_, '_> {
 			};
 		let mut code = CodeEditor{editor: Editor{path, scroll: Scroll::new(Edit::new(default_font(), Cow::new("")))}, diagnostics: Box::new([]), message: None, args: args.collect(), history: vec![]};
 		code.update()?;
-		eprintln!("update {:?}", (std::time::Instant::now()-time));
+		//eprintln!("update {:?}", (std::time::Instant::now()-time));
 		run(&mut code)?
 	} else {
 		let text = std::fs::read(&path)?;

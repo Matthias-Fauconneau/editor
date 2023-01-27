@@ -33,7 +33,7 @@ impl rust::Rust for Analyzer {
 			macro_bang: true,
 			syntactic_name_ref_highlighting: true
 		}, file_id)?;
-		eprintln!("highlight {:?}", (std::time::Instant::now()-time));
+		//eprintln!("highlight {:?}", (std::time::Instant::now()-time));
 		highlight.into_iter().map(|ide::HlRange{range, highlight, ..}| rust::HlRange{range, highlight}).collect()
 	}
 	#[throws] fn definition(&self, position: rust::FilePosition) -> Option<rust::NavigationTarget> {
